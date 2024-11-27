@@ -1,0 +1,135 @@
+package templates
+
+import "goteste/entities"
+import "fmt"
+
+type Page int
+
+const (
+  WatchNext Page = iota + 1
+  ListSaved
+)
+
+func videoUrl(video entities.Video) templ.SafeURL {
+  return templ.URL(fmt.Sprintf("/video/%v", video.Id))
+}
+
+templ header(activePage Page) {
+  <nav>
+    <a href="/next-video" if activePage == WatchNext {aria-current="page"}>Watch Queue</a>
+    <a href="/video-list" if activePage == ListSaved {aria-current="page"}>Saved List</a>
+  </nav>
+}
+
+templ mainPage(title string, activePage Page) {
+  <!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <title>{title}</title>
+      <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css"/>
+    </head>
+    <body>
+      <header>
+        @header(activePage)
+      </header>
+
+      <main>
+        {children...}
+      </main>
+    </body>
+  </html>
+}
+
+script exitFullscreenOnEnd() {
+  if (document.fullscreenElement) {
+    document
+      .exitFullscreen()
+      .catch((err) => console.error(err));
+  }
+}
+
+css videoHolderClass() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 21px 55px;
+}
+
+css videoClass() {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100cqh - 150px);
+}
+
+templ videoViewer(videoUrl templ.SafeURL) {
+  <div class={videoHolderClass()}>
+    <video
+      controls
+      controlslist="nodownload"
+      onEnded={exitFullscreenOnEnd()}
+      class={videoClass()}>
+      <source src={string(videoUrl)} />
+    </video>
+  </div>
+}
+
+css fieldSetClass() {
+  display: flex;
+  gap: 17px;
+  justify-content: center;
+}
+
+css formSubmitClass() {
+  width: 100%;
+}
+
+templ videoActionForm(status entities.VideoStatus) {
+  <form method="post">
+    <fieldset class={fieldSetClass()}>
+      <label><input type="radio" name="status" value="meh" if status == entities.VideoUnwatched || status == entities.VideoWatched {checked="true"}> meh</label>
+      <label><input type="radio" name="status" value="like" if status == entities.VideoLiked {checked="true"}> like</label>
+      <label><input type="radio" name="status" value="fave" if status == entities.VideoSaved {checked="true"}> fave</label>
+    </fieldset>
+
+    <button type="submit" class={formSubmitClass()}>
+      if status == entities.VideoUnwatched {
+        next
+      } else {
+        update
+      }
+    </button>
+  </form>
+}
+
+func pageForVideo(video entities.Video) Page {
+  if video.Status == entities.VideoUnwatched {
+    return WatchNext
+  }
+  
+  return -1
+}
+
+templ WatchVideo(video entities.Video) {
+  @mainPage("Watch Queue", pageForVideo(video)) {
+    @videoViewer(videoUrl(video))
+
+    <p style="text-align:center">{video.Filename}</p>
+
+    @videoActionForm(video.Status)
+  }
+}
+
+templ ListSavedPage(videos []entities.Video) {
+  @mainPage("Saved video list", ListSaved) {
+    <section>
+      <h1>Saved Videos</h1>
+
+      for _, video := range videos {
+        <p><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></p>
+      }
+    </section>
+  }
+}

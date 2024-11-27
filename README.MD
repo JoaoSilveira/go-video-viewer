@@ -25,12 +25,24 @@ I made this project first using svelte (version 4) + Bun, but the start time is 
 
 # How do I use this?
 
-There **MUST** be a file named `go-video-viewer.ini` in the same folder as the executable. And this file **MUST** have the following lines:
-
-```ini
-database= # database path
-video_folder= # video folder path
-```
+1. Get all dependencies
+    ```
+    go get
+    ```
+2. Generate templates
+    ```
+    templ generate
+    ```
+3. Build the project
+    ```
+    go build -o /bin/go-video-viewer.exe
+    ```
+4. Create an `ini` file in the `/bin` folder
+    ```ini
+    database= # database path
+    video_folder= # video folder path
+    ```
+5. Run the executable
 
 ## Migrating from the previous project
 

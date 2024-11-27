@@ -1,4 +1,4 @@
-module goteste
+module go-video-viewer
 
 go 1.23.1
 

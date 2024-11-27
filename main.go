@@ -16,7 +16,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-const ConfigFilePath string = "./config.ini"
+const ConfigFilePath string = "./go-video-viewer.ini"
 
 type PathConfig struct {
 	Database    string
@@ -32,12 +32,12 @@ type VideoJsonEntry struct {
 
 type VideoJsonFile struct {
 	Watched []VideoJsonEntry `json:"watched"`
-	ToWatch []VideoJsonEntry `json:"to_watch"`
+	ToWatch []VideoJsonEntry `json:"toWatch"`
 	Current VideoJsonEntry   `json:"current"`
 }
 
 func ReadVideoJsonFile(path string) (*VideoJsonFile, error) {
-	content, err := os.ReadFile("./attempt.json")
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func LoadConfig() (PathConfig, error) {
 }
 
 func OpenDatabase(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./videos.db?mode=rwc")
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}

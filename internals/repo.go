@@ -1,29 +1,34 @@
-package repo
+package internals
 
 import (
 	"database/sql"
-	"go-video-viewer/config"
-	"go-video-viewer/video"
+	"encoding/json"
+	"os"
 )
 
 type VideoRepository struct {
 	folderPath string
-	db *sql.DB
+	db         *sql.DB
 }
 
-func NewRepository(config config.Config) (VideoRepository, error) {
+func NewRepository(config Config) (VideoRepository, error) {
 	repo := VideoRepository{}
 
-	repo.folderPath := config.VideoFolder
-	repo.db, err := openDatabase(config.Database)
+	db, err := openDatabase(config.Database)
 	if err != nil {
 		return VideoRepository{}, nil
 	}
+	repo.db = db
+	repo.folderPath = config.VideoFolder
 
-	return repo
+	return repo, nil
 }
 
-func (repo VideoRepository) ListAllSaved() ([]video.Video, error) {
+func (repo VideoRepository) Close() error {
+	return repo.db.Close()
+}
+
+func (repo VideoRepository) ListAllSaved() ([]Video, error) {
 	return repo.queryVideos(
 		`
 		select
@@ -40,7 +45,7 @@ func (repo VideoRepository) ListAllSaved() ([]video.Video, error) {
 	)
 }
 
-func (repo VideoRepository) NextInQueue(quantity int) ([]video.Video, error) {
+func (repo VideoRepository) NextInQueue(quantity int) ([]Video, error) {
 	return repo.queryVideos(
 		`
 		select
@@ -57,12 +62,12 @@ func (repo VideoRepository) NextInQueue(quantity int) ([]video.Video, error) {
 		limit ?
 		`,
 		VideoUnwatched,
-		quantity
+		quantity,
 	)
 }
 
 func (repo VideoRepository) FindById(id int32) (*Video, error) {
-	rows, err := db.Query(
+	rows, err := repo.db.Query(
 		`
 		select
 			id,
@@ -85,7 +90,7 @@ func (repo VideoRepository) FindById(id int32) (*Video, error) {
 		return nil, nil
 	}
 
-	video, err := ReadVideoFromRow(rows)
+	video, err := readVideoFromRow(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +99,7 @@ func (repo VideoRepository) FindById(id int32) (*Video, error) {
 }
 
 func (repo VideoRepository) Update(video Video) error {
-	_, err := db.Exec(
+	_, err := repo.db.Exec(
 		`
 		update videos set
 			status = ?
@@ -114,7 +119,7 @@ func (repo VideoRepository) ImportJsonFile(path string) error {
 		return err
 	}
 
-	tx, err := db.Begin()
+	tx, err := repo.db.Begin()
 	if err != nil {
 		return err
 	}
@@ -132,21 +137,21 @@ func (repo VideoRepository) ImportJsonFile(path string) error {
 	}
 	defer stmt.Close()
 
-	for _, entry := range jsonVideo.Watched {
-		_, err = stmt.Exec(entry.Name, entry.Date, video.StatusFromWatchedEntry(entry))
+	for _, entry := range jsonFile.Watched {
+		_, err = stmt.Exec(entry.Name, entry.Date, StatusFromWatchedEntry(entry))
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
 
-	_, err = stmt.Exec(jsonVideo.Current.Name, jsonVideo.Current.Date, VideoUnwatched)
+	_, err = stmt.Exec(jsonFile.Current.Name, jsonFile.Current.Date, VideoUnwatched)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	for _, video := range jsonVideo.ToWatch {
+	for _, video := range jsonFile.ToWatch {
 		_, err = stmt.Exec(video.Name, video.Date, VideoUnwatched)
 		if err != nil {
 			tx.Rollback()
@@ -158,7 +163,7 @@ func (repo VideoRepository) ImportJsonFile(path string) error {
 }
 
 func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
-	entries, err := os.ReadDir(path)
+	entries, err := os.ReadDir(repo.folderPath)
 	if err != nil {
 		return nil, err
 	}
@@ -184,14 +189,14 @@ func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 	return files, nil
 }
 
-func (repo VideoRepository) queryVideos(sql string, args ...any) ([]video.Video, error) {
+func (repo VideoRepository) queryVideos(sql string, args ...any) ([]Video, error) {
 	rows, err := repo.db.Query(sql, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var videos []video.Video
+	var videos []Video
 	for rows.Next() {
 		video, err := readVideoFromRow(rows)
 		if err != nil {
@@ -226,7 +231,7 @@ func openDatabase(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func readVideoFromRow(rows *sql.Rows) (video.Video, error) {
+func readVideoFromRow(rows *sql.Rows) (Video, error) {
 	var video Video
 	err := rows.Scan(
 		&video.Id,
@@ -244,13 +249,13 @@ func readVideoFromRow(rows *sql.Rows) (video.Video, error) {
 func readVideoJsonFile(path string) (VideoJsonFile, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return VideoJsonFile{}, err
 	}
 
 	var payload VideoJsonFile
 	err = json.Unmarshal(content, &payload)
 	if err != nil {
-		return nil, err
+		return VideoJsonFile{}, err
 	}
 
 	return payload, nil

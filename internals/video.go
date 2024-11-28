@@ -1,4 +1,4 @@
-package entities
+package internals
 
 import "time"
 
@@ -38,9 +38,9 @@ type VideoFsEntry struct {
 }
 
 func StatusFromWatchedEntry(entry VideoJsonEntry) VideoStatus {
-	if video.Saved {
+	if entry.Saved {
 		return VideoSaved
-	} else if video.Favorited {
+	} else if entry.Favorited {
 		return VideoLiked
 	} else {
 		return VideoWatched

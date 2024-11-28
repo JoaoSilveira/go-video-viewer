@@ -1,7 +1,9 @@
 package templates
 
-import "go-video-viewer/entities"
-import "fmt"
+import (
+  "fmt"
+  inter "go-video-viewer/internals"
+)
 
 type Page int
 
@@ -10,7 +12,7 @@ const (
   ListSaved
 )
 
-func videoUrl(video entities.Video) templ.SafeURL {
+func videoUrl(video inter.Video) templ.SafeURL {
   return templ.URL(fmt.Sprintf("/video/%v", video.Id))
 }
 
@@ -86,16 +88,16 @@ css formSubmitClass() {
   width: 100%;
 }
 
-templ videoActionForm(status entities.VideoStatus) {
+templ videoActionForm(status inter.VideoStatus) {
   <form method="post">
     <fieldset class={fieldSetClass()}>
-      <label><input type="radio" name="status" value="meh" if status == entities.VideoUnwatched || status == entities.VideoWatched {checked="true"}> meh</label>
-      <label><input type="radio" name="status" value="like" if status == entities.VideoLiked {checked="true"}> like</label>
-      <label><input type="radio" name="status" value="fave" if status == entities.VideoSaved {checked="true"}> fave</label>
+      <label><input type="radio" name="status" value="meh" if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
+      <label><input type="radio" name="status" value="like" if status == inter.VideoLiked {checked="true"}> like</label>
+      <label><input type="radio" name="status" value="fave" if status == inter.VideoSaved {checked="true"}> fave</label>
     </fieldset>
 
     <button type="submit" class={formSubmitClass()}>
-      if status == entities.VideoUnwatched {
+      if status == inter.VideoUnwatched {
         next
       } else {
         update
@@ -104,15 +106,15 @@ templ videoActionForm(status entities.VideoStatus) {
   </form>
 }
 
-func pageForVideo(video entities.Video) Page {
-  if video.Status == entities.VideoUnwatched {
+func pageForVideo(video inter.Video) Page {
+  if video.Status == inter.VideoUnwatched {
     return WatchNext
   }
   
   return -1
 }
 
-templ WatchVideo(video entities.Video) {
+templ WatchVideo(video inter.Video) {
   @mainPage("Watch Queue", pageForVideo(video)) {
     @videoViewer(videoUrl(video))
 
@@ -122,7 +124,7 @@ templ WatchVideo(video entities.Video) {
   }
 }
 
-templ ListSavedPage(videos []entities.Video) {
+templ ListSavedPage(videos []inter.Video) {
   @mainPage("Saved video list", ListSaved) {
     <section>
       <h1>Saved Videos</h1>

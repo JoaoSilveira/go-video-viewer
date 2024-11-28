@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	. "go-video-viewer/entities"
+	inter "go-video-viewer/internals"
 	"go-video-viewer/templates"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -12,44 +13,43 @@ import (
 )
 
 func main() {
-	db, err := OpenDatabase("./database.db")
+	config, err := inter.LoadConfig(inter.ConfigFilePath)
+	if err != nil {
+		log.Fatalln("Failed to load config file.", err)
+	}
+
+	repo, err := inter.NewRepository(config)
 	if err != nil {
 		fmt.Printf("Failed to open database %v", err)
 		return
 	}
-	defer db.Close()
+	defer repo.Close()
 
-	jsonFile := flag.String("json-file", "attempt.json", "json file path")
+	jsonFile := flag.String("json-file", "", "json file path")
 	flag.Parse()
 
 	if *jsonFile != "" {
-		fmt.Println("Importing json...")
+		log.Println("importing json file...")
 
-		jsonFile, err := ReadVideoJsonFile(*jsonFile)
+		err := repo.ImportJsonFile(*jsonFile)
 		if err != nil {
-			fmt.Println("Failed to read json file")
-			return
-		}
-
-		if ImportJson(db, jsonFile) != nil {
-			fmt.Println("Failed to import json")
-			return
+			log.Fatalln("Failed to read json file")
 		}
 	}
 
 	http.HandleFunc("GET /next-video", func(w http.ResponseWriter, r *http.Request) {
-		video, err := NextVideoInQueue(db)
+		videos, err := repo.NextInQueue(1)
 		if err != nil {
 			http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if video == nil {
+		if len(videos) == 0 {
 			http.Error(w, "no next video available", http.StatusNotFound)
 			return
 		}
 
-		templates.WatchVideo(*video).Render(r.Context(), w)
+		templates.WatchVideo(videos[0]).Render(r.Context(), w)
 	})
 	http.HandleFunc("POST /next-video", func(w http.ResponseWriter, r *http.Request) {
 		if r.ParseForm() != nil {
@@ -63,14 +63,14 @@ func main() {
 			return
 		}
 
-		var status VideoStatus
+		var status inter.VideoStatus
 		switch statusParam {
 		case "meh":
-			status = VideoWatched
+			status = inter.VideoWatched
 		case "like":
-			status = VideoLiked
+			status = inter.VideoLiked
 		case "fave":
-			status = VideoSaved
+			status = inter.VideoSaved
 		default:
 			{
 				http.Error(w, "invalid value for \"status\"", http.StatusBadRequest)
@@ -78,38 +78,32 @@ func main() {
 			}
 		}
 
-		video, err := NextVideoInQueue(db)
+		videos, err := repo.NextInQueue(2)
 		if err != nil {
 			http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		if video == nil {
+		if len(videos) == 0 {
 			http.Error(w, "no next video available", http.StatusNotFound)
 			return
 		}
 
-		video.Status = status
-		if UpdateVideo(db, *video) != nil {
+		videos[0].Status = status
+		if err = repo.Update(videos[0]); err != nil {
 			http.Error(w, "failed to update video status", http.StatusInternalServerError)
 			return
 		}
 
-		video, err = NextVideoInQueue(db)
-		if err != nil {
-			http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if video == nil {
+		if len(videos) == 1 {
 			http.Error(w, "no next video available", http.StatusNotFound)
 			return
 		}
 
-		templates.WatchVideo(*video).Render(r.Context(), w)
+		templates.WatchVideo(videos[1]).Render(r.Context(), w)
 	})
 	http.HandleFunc("GET /video-list", func(w http.ResponseWriter, r *http.Request) {
-		list, err := ListAllSaved(db)
+		list, err := repo.ListAllSaved()
 		if err != nil {
 			http.Error(w, "error: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -124,7 +118,7 @@ func main() {
 			return
 		}
 
-		video, err := FindVideoById(db, int32(id))
+		video, err := repo.FindById(int32(id))
 		if err != nil {
 			http.Error(
 				w,
@@ -148,7 +142,7 @@ func main() {
 			return
 		}
 
-		video, err := FindVideoById(db, int32(id))
+		video, err := repo.FindById(int32(id))
 		if err != nil {
 			http.Error(
 				w,
@@ -173,14 +167,14 @@ func main() {
 			return
 		}
 
-		var status VideoStatus
+		var status inter.VideoStatus
 		switch statusParam {
 		case "meh":
-			status = VideoWatched
+			status = inter.VideoWatched
 		case "like":
-			status = VideoLiked
+			status = inter.VideoLiked
 		case "fave":
-			status = VideoSaved
+			status = inter.VideoSaved
 		default:
 			{
 				http.Error(w, "invalid value for \"status\"", http.StatusBadRequest)
@@ -189,7 +183,7 @@ func main() {
 		}
 
 		video.Status = status
-		if UpdateVideo(db, *video) != nil {
+		if repo.Update(*video) != nil {
 			http.Error(w, "failed to update video status", http.StatusInternalServerError)
 			return
 		}
@@ -204,7 +198,7 @@ func main() {
 			return
 		}
 
-		video, err := FindVideoById(db, int32(id))
+		video, err := repo.FindById(int32(id))
 		if err != nil {
 			http.Error(
 				w,

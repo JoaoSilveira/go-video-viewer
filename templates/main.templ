@@ -3,6 +3,7 @@ package templates
 import (
   "fmt"
   inter "go-video-viewer/internals"
+  "net/http"
 )
 
 type Page int
@@ -91,9 +92,9 @@ css formSubmitClass() {
 templ videoActionForm(status inter.VideoStatus) {
   <form method="post">
     <fieldset class={fieldSetClass()}>
-      <label><input type="radio" name="status" value="meh" if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
-      <label><input type="radio" name="status" value="like" if status == inter.VideoLiked {checked="true"}> like</label>
-      <label><input type="radio" name="status" value="fave" if status == inter.VideoSaved {checked="true"}> fave</label>
+      <label><input type="radio" name="status" value="{internals.VideoWatched}" if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
+      <label><input type="radio" name="status" value="{internals.VideoLiked}" if status == inter.VideoLiked {checked="true"}> like</label>
+      <label><input type="radio" name="status" value="{internals.VideoSaved}" if status == inter.VideoSaved {checked="true"}> fave</label>
     </fieldset>
 
     <button type="submit" class={formSubmitClass()}>
@@ -132,6 +133,28 @@ templ ListSavedPage(videos []inter.Video) {
       for _, video := range videos {
         <p><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></p>
       }
+    </section>
+  }
+}
+
+templ ErrorPage(status int, msg string, cause error) {
+  @mainPage(fmt.Sprintf("error - %v", status), -1) {
+    <h1>Error {status} - {http.StatusText(status)}</h1>
+    <p>{msg}</p>
+    <pre>{cause}</pre>
+  }
+}
+
+templ NoNextVideoPage() {
+  @mainPage(fmt.Sprintf("error - %v", status), -1) {
+    <h1>No Next Video</h1>
+    <p>you emptied the queue, good work!</p>
+    <section>
+      <p>or... you could try updating the database...</p>
+      
+      <form action="/update" method="post">
+        <button type="submit" class={formSubmitClass()}>update</button>
+      </form>
     </section>
   }
 }

@@ -162,6 +162,46 @@ func (repo VideoRepository) ImportJsonFile(path string) error {
 	return tx.Commit()
 }
 
+func (repo VideoRepository) ImportFsEntries(entries []VideoFsEntry) error {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(`
+		insert into videos
+			(filename, created_at, status)
+		values
+			(?, ?, ?)
+		on conflict (filename) do nothing
+	`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	for _, entry := range entries {
+		videoStatus := VideoUnwatched
+		if entry.IsTruncated {
+			videoStatus = VideoWatched
+		}
+
+		_, err = stmt.Exec(
+			entry.Filename,
+			entry.LastModifiedTime,
+			videoStatus
+		)
+
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 	entries, err := os.ReadDir(repo.folderPath)
 	if err != nil {

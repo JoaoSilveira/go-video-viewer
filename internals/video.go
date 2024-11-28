@@ -1,6 +1,10 @@
 package internals
 
-import "time"
+import (
+	"time"
+	"strconv"
+	"fmt"
+)
 
 type VideoStatus int32
 
@@ -45,4 +49,28 @@ func StatusFromWatchedEntry(entry VideoJsonEntry) VideoStatus {
 	} else {
 		return VideoWatched
 	}
+}
+
+func StatusFromStringValue(value string) (VideoStatus, error) {
+	val, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid value for video status \"%v\"", value)
+	}
+
+	switch val {
+	case VideoUnwatched:
+		return inter.VideoUnwatched, nil
+	case VideoWatched:
+		return inter.VideoWatched, nil
+	case VideoLiked:
+		return inter.VideoLiked, nil
+	case VideoSaved:
+		return inter.VideoSaved, nil
+	default:
+		return 0, fmt.Errorf("invalid video status value \"%v\"", val)
+	}
+}
+
+func (status VideoStatus) PersistFile() bool {
+	return status == VideoSaved
 }

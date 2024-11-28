@@ -7,6 +7,7 @@ const ConfigFilePath string = "./go-video-viewer.ini"
 type Config struct {
 	Database    string `ini:"database"`
 	VideoFolder string `ini:"video_folder"`
+	Port        string `ini:"port"`
 }
 
 func LoadConfig(path string) (Config, error) {

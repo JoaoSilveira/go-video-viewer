@@ -14,6 +14,7 @@ This is a server written in go for me to watch my anime. What are the requisites
   - [x] next in queue `/next-video`
   - [x] list saved `/video-list`
   - [x] watch saved `/watch/{id}`
+  - [ ] serve video file `/video/{id}`
 - [ ] respect parameters
 - [ ] truncate files
 - [ ] serve video folder

@@ -1,3 +1,6 @@
+> [!WARNING]  
+> Project made for personal use, use at your own risk
+
 # Go Video Viewer
 
 This is a server written in go for me to watch my anime. What are the requisites?
@@ -7,6 +10,7 @@ This is a server written in go for me to watch my anime. What are the requisites
 3. After watching I want to choose whether to keep, like or just mark as watched
 4. If I choose not to keep a file, it'll be truncated (for me to remember not to download twice)
 5. I want to be able to watch again files I keep
+6. The database needs to be updated with the videos in the folder
    
 # Progress
 
@@ -14,36 +18,48 @@ This is a server written in go for me to watch my anime. What are the requisites
   - [x] next in queue `/next-video`
   - [x] list saved `/video-list`
   - [x] watch saved `/watch/{id}`
-  - [ ] serve video file `/video/{id}`
-- [ ] respect parameters
-- [ ] truncate files
-- [ ] serve video folder
-- [ ] refactoring
+  - [x] serve video file `/video/{id}`
+  - [x] read folder to update database `/update`
+- [x] respect parameters
+- [x] truncate files
+- [x] refactoring
+- [ ] make ini the same name as executable
 
 ## Motivation
 
-I made this project first using svelte (version 4) + Bun, but the start time is eye boggling long (above 20s). So I used this opportunity to put my go skills into practice and try improving this thing.
+I made this project first using svelte (version 4) + Bun, but the start time is eye boggling long (above 20s). So I used this opportunity to put my go skills into practice and try solving this minor inconvenience.
 
-# How do I use this?
+# Getting started
 
-1. Get all dependencies
+1. Download and install [go](https://go.dev/dl/) version 1.23.1 (or make it work on other version on your own)
+2. Get all dependencies
     ```
     go get
     ```
-2. Generate templates
+3. Generate templates
     ```
     templ generate
     ```
-3. Build the project
+4. Build the project
     ```
     go build -o /bin/go-video-viewer.exe
     ```
-4. Create an `ini` file in the `/bin` folder
+5. Create an `go-video-viewer.ini` file in the `/bin` folder (hardcoded filename)
     ```ini
     database= # database path
     video_folder= # video folder path
     ```
-5. Run the executable
+6. Run the executable
+
+## The ini file
+
+The ini file can have the following properties:
+
+| property | description |
+| -------: | :---------- |
+| database | The database file path. Ex: `database=videos.db`, `database=C:\Program Files\go-video-viewer\database.db` |
+| video_folder | The path of the video folder. Ex: `video_folder=C:\Users\me\Videos`, `video_folder=videos` |
+| port | (*OPTIONAL*) The port used to run the server (default on 3000). Ex: `8000`, `8080`, `16217` |
 
 ## Migrating from the previous project
 

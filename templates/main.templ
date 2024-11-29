@@ -92,9 +92,9 @@ css formSubmitClass() {
 templ videoActionForm(status inter.VideoStatus) {
   <form method="post">
     <fieldset class={fieldSetClass()}>
-      <label><input type="radio" name="status" value="{internals.VideoWatched}" if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
-      <label><input type="radio" name="status" value="{internals.VideoLiked}" if status == inter.VideoLiked {checked="true"}> like</label>
-      <label><input type="radio" name="status" value="{internals.VideoSaved}" if status == inter.VideoSaved {checked="true"}> fave</label>
+      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoWatched)} if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
+      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoLiked)} if status == inter.VideoLiked {checked="true"}> like</label>
+      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoSaved)} if status == inter.VideoSaved {checked="true"}> fave</label>
     </fieldset>
 
     <button type="submit" class={formSubmitClass()}>

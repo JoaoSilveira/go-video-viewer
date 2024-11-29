@@ -98,7 +98,7 @@ func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	videos[0].Status = newStatus
-	err = app.Repo.Update(videos[0])
+	err = app.UpdateVideo(videos[0])
 	if err != nil {
 		renderError(
 			r.Context(),
@@ -215,7 +215,7 @@ func handlePostWatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	video.Status = newStatus
-	err = app.Repo.Update(*video)
+	err = app.UpdateVideo(*video)
 	if err != nil {
 		renderError(
 			r.Context(),

@@ -2,12 +2,15 @@ package internals
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"gopkg.in/ini.v1"
 )
-
-const ConfigFilePath string = "./go-video-viewer.ini"
 
 type Config struct {
 	Database    string `ini:"database"`
@@ -15,9 +18,13 @@ type Config struct {
 	Port        string `ini:"port"`
 }
 
-func LoadConfig(path string) (Config, error) {
-	cfg, err := ini.Load(path)
+func LoadConfig() (Config, error) {
+	cfg, err := ini.Load(getIniPath())
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return Config{}, tryCreateIniFile()
+		}
+
 		return Config{}, err
 	}
 
@@ -54,4 +61,29 @@ func (cfg Config) validate() error {
 	}
 
 	return nil
+}
+
+func getIniPath() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatal("failed to get executable path", err)
+	}
+
+	ext := filepath.Ext(exePath)
+	return strings.TrimSuffix(exePath, ext) + ".ini"
+}
+
+func tryCreateIniFile() error {
+	f, err := os.Create(getIniPath())
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprint(f, "database=\nvideo_folder=")
+	if err != nil {
+		return err
+	}
+
+	return errors.New("the .ini file was absent, one was now created, please fill it up")
 }

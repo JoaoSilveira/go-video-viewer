@@ -13,7 +13,7 @@ type App struct {
 }
 
 func NewApp() App {
-	config, err := LoadConfig(ConfigFilePath)
+	config, err := LoadConfig()
 	if err != nil {
 		log.Fatalln("Failed to load config file.", err)
 	}

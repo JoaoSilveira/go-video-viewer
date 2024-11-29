@@ -127,34 +127,45 @@ templ WatchVideo(video inter.Video) {
 
 templ ListSavedPage(videos []inter.Video) {
   @mainPage("Saved video list", ListSaved) {
-    <section>
-      <h1>Saved Videos</h1>
+    <h1>Saved Videos</h1>
 
-      for _, video := range videos {
-        <p><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></p>
-      }
-    </section>
+    if len(videos) == 0 {
+      <p>Wow, such empty!</p>
+      <p>There are no saved videos 😔</p>
+    }
+
+    for _, video := range videos {
+      <p><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></p>
+    }
   }
 }
 
 templ ErrorPage(status int, msg string, cause error) {
   @mainPage(fmt.Sprintf("error - %v", status), -1) {
-    <h1>Error {status} - {http.StatusText(status)}</h1>
+    <h1>Error {fmt.SPrint(status)} - {http.StatusText(status)}</h1>
     <p>{msg}</p>
-    <pre>{cause}</pre>
+    <pre>{cause.Error()}</pre>
   }
 }
 
+templ VideoNotFoundPage(id int) {
+  @mainPage("Video not found", -1) {
+    <h1>Oh no! Something seems to be missing...</h1>
+
+    <p>The video (id: {fmt.Sprint(id)}) doesn't seem to be in the database 😱</p>
+  }
+}
+
+
 templ NoNextVideoPage() {
-  @mainPage(fmt.Sprintf("error - %v", status), -1) {
+  @mainPage("Video not found", -1) {
     <h1>No Next Video</h1>
-    <p>you emptied the queue, good work!</p>
-    <section>
-      <p>or... you could try updating the database...</p>
-      
-      <form action="/update" method="post">
-        <button type="submit" class={formSubmitClass()}>update</button>
-      </form>
-    </section>
+
+    <p>You emptied the queue, good work!</p>
+    <p>Or... you could maybe try updating the database...</p>
+    
+    <form action="/update" method="post">
+      <button type="submit" class={formSubmitClass()}>update</button>
+    </form>
   }
 }

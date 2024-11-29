@@ -190,7 +190,7 @@ func (repo VideoRepository) ImportFsEntries(entries []VideoFsEntry) error {
 		_, err = stmt.Exec(
 			entry.Filename,
 			entry.LastModifiedTime,
-			videoStatus
+			videoStatus,
 		)
 
 		if err != nil {
@@ -209,18 +209,18 @@ func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 	}
 
 	files := make([]VideoFsEntry, len(entries))
-	for i := 0; i < len(entries); i++ {
-		if entries[i].IsDir() {
+	for _, entry := range entries {
+		if entry.IsDir() || !hasVideoExtension(entry.Name()) {
 			continue
 		}
 
-		info, err := entries[i].Info()
+		info, err := entry.Info()
 		if err != nil {
 			return nil, err
 		}
 
 		files = append(files, VideoFsEntry{
-			Filename:         entries[i].Name(),
+			Filename:         entry.Name(),
 			LastModifiedTime: info.ModTime(),
 			IsTruncated:      info.Size() <= 0,
 		})

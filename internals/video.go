@@ -1,9 +1,12 @@
 package internals
 
 import (
-	"time"
-	"strconv"
 	"fmt"
+	"path/filepath"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type VideoStatus int32
@@ -57,15 +60,15 @@ func StatusFromStringValue(value string) (VideoStatus, error) {
 		return 0, fmt.Errorf("invalid value for video status \"%v\"", value)
 	}
 
-	switch val {
+	switch VideoStatus(val) {
 	case VideoUnwatched:
-		return inter.VideoUnwatched, nil
+		return VideoUnwatched, nil
 	case VideoWatched:
-		return inter.VideoWatched, nil
+		return VideoWatched, nil
 	case VideoLiked:
-		return inter.VideoLiked, nil
+		return VideoLiked, nil
 	case VideoSaved:
-		return inter.VideoSaved, nil
+		return VideoSaved, nil
 	default:
 		return 0, fmt.Errorf("invalid video status value \"%v\"", val)
 	}
@@ -73,4 +76,52 @@ func StatusFromStringValue(value string) (VideoStatus, error) {
 
 func (status VideoStatus) PersistFile() bool {
 	return status == VideoSaved
+}
+
+func hasVideoExtension(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+
+	return slices.Contains(VideoExtensions, ext)
+}
+
+// list taken from https://gist.github.com/aaomidi/0a3b5c9bd563c9e012518b495410dc0e
+var VideoExtensions = []string{
+	"webm",
+	"mkv",
+	"flv",
+	"vob",
+	"ogv",
+	"ogg",
+	"rrc",
+	"gifv",
+	"mng",
+	"mov",
+	"avi",
+	"qt",
+	"wmv",
+	"yuv",
+	"rm",
+	"asf",
+	"amv",
+	"mp4",
+	"m4p",
+	"m4v",
+	"mpg",
+	"mp2",
+	"mpeg",
+	"mpe",
+	"mpv",
+	"m4v",
+	"svi",
+	"3gp",
+	"3g2",
+	"mxf",
+	"roq",
+	"nsv",
+	"flv",
+	"f4v",
+	"f4p",
+	"f4a",
+	"f4b",
+	"mod",
 }

@@ -3,17 +3,17 @@ package internals
 import (
 	"go-video-viewer/cmd_args"
 	"log"
-	"path"
 	"os"
+	"path"
 )
 
 type App struct {
 	Config Config
-	Repo VideoRepository
+	Repo   VideoRepository
 }
 
 func NewApp() App {
-	config, err := LoadConfig(inter.ConfigFilePath)
+	config, err := LoadConfig(ConfigFilePath)
 	if err != nil {
 		log.Fatalln("Failed to load config file.", err)
 	}
@@ -23,7 +23,7 @@ func NewApp() App {
 		log.Fatalln("Failed to initialize repository", err)
 	}
 
-	return App{ Config: config, Repo: repo }
+	return App{Config: config, Repo: repo}
 }
 
 func (app App) Close() {

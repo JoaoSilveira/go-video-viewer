@@ -1,11 +1,10 @@
 package main
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	inter "go-video-viewer/internals"
 	"go-video-viewer/templates"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -15,7 +14,7 @@ import (
 var app inter.App
 
 func renderError(
-	ctx *context.Context,
+	ctx context.Context,
 	w http.ResponseWriter,
 	msg string,
 	err error,
@@ -25,9 +24,14 @@ func renderError(
 	templates.ErrorPage(status, msg, err).Render(ctx, w)
 }
 
-func renderNotFound(ctx *context.Context, w http.ResponseWriter) {
-	w.WriteHeader(htto.StatusNotFound)
+func renderNoNextVideo(ctx context.Context, w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
 	templates.NoNextVideoPage().Render(ctx, w)
+}
+
+func renderNotFound(ctx context.Context, w http.ResponseWriter, id int) {
+	w.WriteHeader(http.StatusNotFound)
+	templates.VideoNotFoundPage(id).Render(ctx, w)
 }
 
 func handleGetNextVideo(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +48,7 @@ func handleGetNextVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(videos) == 0 {
-		renderNotFound()
+		renderNoNextVideo(r.Context(), w)
 		return
 	}
 
@@ -52,52 +56,66 @@ func handleGetNextVideo(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
-	var errMsg string
-	var statusCode int
-
-	if r.ParseForm() != nil {
-		errMsg = "failed to parse form data"
-		statusCode = http.StatusBadRequest
-		goto Error
+	err := r.ParseForm()
+	if err != nil {
+		renderError(
+			r.Context(),
+			w,
+			"failed to parse form data",
+			err,
+			http.StatusBadRequest,
+		)
+		return
 	}
 
 	newStatus, err := inter.StatusFromStringValue(r.FormValue("status"))
 	if err != nil {
-		errMsg = "invalid form field"
-		statusCode = http.StatusBadRequest
-		goto Error
+		renderError(
+			r.Context(),
+			w,
+			"invalid form field",
+			err,
+			http.StatusBadRequest,
+		)
+		return
 	}
 
 	videos, err := app.Repo.NextInQueue(2)
 	if err != nil {
-		errMsg = "failed to fetch next video in queue"
-		statusCode = http.StatusInternalServerError
-		goto Error
+		renderError(
+			r.Context(),
+			w,
+			"failed to fetch next video in queue",
+			err,
+			http.StatusInternalServerError,
+		)
+		return
 	}
 
 	if len(videos) == 0 {
-		renderNotFound(r.Context(), w)
+		renderNoNextVideo(r.Context(), w)
 		return
 	}
 
 	videos[0].Status = newStatus
 	err = app.Repo.Update(videos[0])
 	if err != nil {
-		errMsg = "failed to update video status"
-		statusCode = http.StatusInternalServerError
-		goto Error
+		renderError(
+			r.Context(),
+			w,
+			"failed to update video status",
+			err,
+			http.StatusInternalServerError,
+		)
+		return
 	}
 
 	if len(videos) == 1 {
-		renderNotFound(r.Context(), w)
+		renderNoNextVideo(r.Context(), w)
 		return
 	}
 
 	templates.WatchVideo(videos[1]).Render(r.Context(), w)
-	return
-
-Error:
-	renderError(r.Context(), w, errMsg, err, statusCode)
 }
 
 func handleGetVideoList(w http.ResponseWriter, r *http.Request) {
@@ -117,12 +135,12 @@ func handleGetVideoList(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetWatch(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		renderError(r.Context(), w, "invalid id in url path", err, http.StatusBadRequest)
 		return
 	}
-	
+
 	video, err := app.Repo.FindById(int32(id))
 	if err != nil {
 		renderError(
@@ -136,7 +154,7 @@ func handleGetWatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if video == nil {
-		renderNotFound(r.Context(), w)
+		renderNotFound(r.Context(), w, id)
 		return
 	}
 
@@ -144,63 +162,18 @@ func handleGetWatch(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePostWatch(w http.ResponseWriter, r *http.Request) {
-	var errMsg string
-	var statusCode int
-
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		errMsg = "invalid id in url path"
-		statusCode = http.StatusBadRequest
-		goto Error
-	}
-	
-	video, err := app.Repo.FindById(int32(id))
-	if err != nil {
-		errMsg = "failed to read video from the database"
-		statusCode = http.StatusInternalServerError
-		goto Error
-	}
-
-	if video == nil {
-		renderNotFound(r.Context(), w)
+		renderError(
+			r.Context(),
+			w,
+			"invalid id in url path",
+			err,
+			http.StatusBadRequest,
+		)
 		return
 	}
 
-	if r.ParseForm() != nil {
-		errMsg = "failed to parse form data"
-		statusCode = http.StatusBadRequest
-		goto Error
-	}
-
-	newStatus, err := inter.StatusFromStringValue(r.FormValue("status"))
-	if err != nil {
-		errMsg = "invalid form field"
-		statusCode = http.StatusBadRequest
-		goto Error
-	}
-
-	video.Status = newStatus
-	err = app.Repo.Update(*video)
-	if err != nil {
-		errMsg = "failed to update video status"
-		statusCode = http.StatusInternalServerError
-		goto Error
-	}
-
-	templates.WatchVideo(*video).Render(r.Context(), w)
-	return
-
-Error:
-	renderError(r.Context(), w, errMsg, err, statusCode)
-}
-
-func handleGetVideo(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
-	if err != nil {
-		renderError(r.Context(), w, "invalid id in url path", err, http.StatusBadRequest)
-		return
-	}
-	
 	video, err := app.Repo.FindById(int32(id))
 	if err != nil {
 		renderError(
@@ -214,11 +187,74 @@ func handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if video == nil {
-		renderNotFound(r.Context(), w)
+		renderNotFound(r.Context(), w, id)
 		return
 	}
 
-	http.ServeFile(w, r, app.VideoPath(video))
+	if r.ParseForm() != nil {
+		renderError(
+			r.Context(),
+			w,
+			"failed to parse form data",
+			err,
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	newStatus, err := inter.StatusFromStringValue(r.FormValue("status"))
+	if err != nil {
+		renderError(
+			r.Context(),
+			w,
+			"invalid form field",
+			err,
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	video.Status = newStatus
+	err = app.Repo.Update(*video)
+	if err != nil {
+		renderError(
+			r.Context(),
+			w,
+			"failed to update video status",
+			err,
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	templates.WatchVideo(*video).Render(r.Context(), w)
+}
+
+func handleGetVideo(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		renderError(r.Context(), w, "invalid id in url path", err, http.StatusBadRequest)
+		return
+	}
+
+	video, err := app.Repo.FindById(int32(id))
+	if err != nil {
+		renderError(
+			r.Context(),
+			w,
+			"failed to read video from the database",
+			err,
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if video == nil {
+		renderNotFound(r.Context(), w, id)
+		return
+	}
+
+	http.ServeFile(w, r, app.VideoPath(*video))
 }
 
 func handlePostUpdate(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +275,7 @@ func handlePostUpdate(w http.ResponseWriter, r *http.Request) {
 func main() {
 	app = inter.NewApp()
 	defer app.Close()
-	
+
 	app.Init()
 
 	http.HandleFunc("GET /next-video", handleGetNextVideo)
@@ -250,6 +286,6 @@ func main() {
 	http.HandleFunc("GET /video/{id}", handleGetVideo)
 	http.HandleFunc("POST /update", handlePostUpdate)
 
-	fmt.Println(fmt.Sprintf("Listening on :%v", app.Config.Port))
+	fmt.Printf("Listening on :%v\n", app.Config.Port)
 	http.ListenAndServe(fmt.Sprintf("127.0.0.1:%v", app.Config.Port), nil)
 }

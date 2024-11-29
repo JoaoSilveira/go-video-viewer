@@ -23,7 +23,8 @@ This is a server written in go for me to watch my anime. What are the requisites
 - [x] respect parameters
 - [x] truncate files
 - [x] refactoring
-- [ ] make ini the same name as executable
+- [x] make ini the same name as executable
+- [x] automatically create ini file when it doesn't exist
 
 ## Motivation
 
@@ -32,19 +33,16 @@ I made this project first using svelte (version 4) + Bun, but the start time is 
 # Getting started
 
 1. Download and install [go](https://go.dev/dl/) version 1.23.1 (or make it work on other version on your own)
-2. Get all dependencies
-    ```
-    go get
-    ```
+2. Install [Templ](https://github.com/a-h/templ)
 3. Generate templates
     ```
     templ generate
     ```
 4. Build the project
     ```
-    go build -o /bin/go-video-viewer.exe
+    go build -o bin/
     ```
-5. Create an `go-video-viewer.ini` file in the `/bin` folder (hardcoded filename)
+5. Create an `go-video-viewer.ini` file in the `/bin` folder (ini file must have the same name as the executable)
     ```ini
     database= # database path
     video_folder= # video folder path
@@ -59,6 +57,7 @@ The ini file can have the following properties:
 | -------: | :---------- |
 | database | The database file path. Ex: `database=videos.db`, `database=C:\Program Files\go-video-viewer\database.db` |
 | video_folder | The path of the video folder. Ex: `video_folder=C:\Users\me\Videos`, `video_folder=videos` |
+| address | (*OPTIONAL*) The address used to run the server (default on 127.0.0.1). Ex: `localhost`, `127.0.0.1` |
 | port | (*OPTIONAL*) The port used to run the server (default on 3000). Ex: `8000`, `8080`, `16217` |
 
 ## Migrating from the previous project

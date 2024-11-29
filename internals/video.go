@@ -29,7 +29,7 @@ type VideoJsonEntry struct {
 	Name      string    `json:"name"`
 	Date      time.Time `json:"date"`
 	Favorited bool      `json:"favorited"`
-	Saved     bool      `json:"saved"`
+	Saved     bool      `json:"save"`
 }
 
 type VideoJsonFile struct {

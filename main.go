@@ -278,6 +278,9 @@ func main() {
 
 	app.Init()
 
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/next-video", http.StatusPermanentRedirect)
+	})
 	http.HandleFunc("GET /next-video", handleGetNextVideo)
 	http.HandleFunc("POST /next-video", handlePostNextVideo)
 	http.HandleFunc("GET /video-list", handleGetVideoList)
@@ -286,6 +289,6 @@ func main() {
 	http.HandleFunc("GET /video/{id}", handleGetVideo)
 	http.HandleFunc("POST /update", handlePostUpdate)
 
-	fmt.Printf("Listening on :%v\n", app.Config.Port)
-	http.ListenAndServe(fmt.Sprintf("127.0.0.1:%v", app.Config.Port), nil)
+	fmt.Printf("Listening on %v:%v\n", app.Config.Address, app.Config.Port)
+	http.ListenAndServe(fmt.Sprintf("%v:%v", app.Config.Address, app.Config.Port), nil)
 }

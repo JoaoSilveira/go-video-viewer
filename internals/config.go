@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Database    string `ini:"database"`
 	VideoFolder string `ini:"video_folder"`
+	Address     string `ini:"address"`
 	Port        string `ini:"port"`
 }
 
@@ -31,6 +32,7 @@ func LoadConfig() (Config, error) {
 	pathConfig := Config{
 		Database:    "",
 		VideoFolder: "",
+		Address:     "127.0.0.1",
 		Port:        "3000",
 	}
 
@@ -74,7 +76,8 @@ func getIniPath() string {
 }
 
 func tryCreateIniFile() error {
-	f, err := os.Create(getIniPath())
+	iniPath := getIniPath()
+	f, err := os.Create(iniPath)
 	if err != nil {
 		return err
 	}
@@ -85,5 +88,5 @@ func tryCreateIniFile() error {
 		return err
 	}
 
-	return errors.New("the .ini file was absent, one was now created, please fill it up")
+	return errors.New("The .ini file was absent, a new one was created, please fill it up. Path: " + iniPath)
 }

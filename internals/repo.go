@@ -229,6 +229,55 @@ func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 	return files, nil
 }
 
+func (repo VideoRepository) QueryStats() (VideoStats, error) {
+	rows, err := repo.db.Query(
+		`
+		select
+			status,
+			count(id)
+		from
+			videos
+		group by
+			status
+		order by
+			status
+		`,
+	)
+	if err != nil {
+		return VideoStats{}, err
+	}
+	defer rows.Close()
+
+	stats := VideoStats{
+		Unwatched: 0,
+		Watched:   0,
+		Liked:     0,
+		Saved:     0,
+	}
+	for rows.Next() {
+		var status VideoStatus
+		var quantity int
+
+		err = rows.Scan(&status, &quantity)
+		if err != nil {
+			return VideoStats{}, nil
+		}
+
+		switch status {
+		case VideoUnwatched:
+			stats.Unwatched = quantity
+		case VideoWatched:
+			stats.Watched = quantity
+		case VideoLiked:
+			stats.Liked = quantity
+		case VideoSaved:
+			stats.Saved = quantity
+		}
+	}
+
+	return stats, nil
+}
+
 func (repo VideoRepository) queryVideos(sql string, args ...any) ([]Video, error) {
 	rows, err := repo.db.Query(sql, args...)
 	if err != nil {

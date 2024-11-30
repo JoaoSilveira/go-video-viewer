@@ -44,6 +44,13 @@ type VideoFsEntry struct {
 	IsTruncated      bool
 }
 
+type VideoStats struct {
+	Unwatched int
+	Watched   int
+	Liked     int
+	Saved     int
+}
+
 func StatusFromWatchedEntry(entry VideoJsonEntry) VideoStatus {
 	if entry.Saved {
 		return VideoSaved

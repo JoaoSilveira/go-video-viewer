@@ -34,6 +34,22 @@ func renderNotFound(ctx context.Context, w http.ResponseWriter, id int) {
 	templates.VideoNotFoundPage(id).Render(ctx, w)
 }
 
+func handleGetHome(w http.ResponseWriter, r *http.Request) {
+	stats, err := app.Repo.QueryStats()
+	if err != nil {
+		renderError(
+			r.Context(),
+			w,
+			"failed to query the stats from the database",
+			err,
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	templates.HomePage(stats).Render(r.Context(), w)
+}
+
 func handleGetNextVideo(w http.ResponseWriter, r *http.Request) {
 	videos, err := app.Repo.NextInQueue(1)
 	if err != nil {
@@ -278,9 +294,7 @@ func main() {
 
 	app.Init()
 
-	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/next-video", http.StatusPermanentRedirect)
-	})
+	http.HandleFunc("GET /", handleGetHome)
 	http.HandleFunc("GET /next-video", handleGetNextVideo)
 	http.HandleFunc("POST /next-video", handlePostNextVideo)
 	http.HandleFunc("GET /video-list", handleGetVideoList)

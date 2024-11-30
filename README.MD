@@ -3,7 +3,7 @@
 
 # Go Video Viewer
 
-This is a server written in go for me to watch my anime. What are the requisites?
+This is a server written in go for me to watch anime. What are the requisites?
 
 1. All video files are inside a folder
 2. The modified time of the files is the order in which I'll watch
@@ -20,6 +20,7 @@ This is a server written in go for me to watch my anime. What are the requisites
   - [x] watch saved `/watch/{id}`
   - [x] serve video file `/video/{id}`
   - [x] read folder to update database `/update`
+  - [x] create home page with statistics `/`
 - [x] respect parameters
 - [x] truncate files
 - [x] refactoring

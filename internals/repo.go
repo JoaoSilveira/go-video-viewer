@@ -3,6 +3,7 @@ package internals
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -187,11 +188,15 @@ func (repo VideoRepository) ImportFsEntries(entries []VideoFsEntry) error {
 			videoStatus = VideoWatched
 		}
 
-		_, err = stmt.Exec(
+		res, err := stmt.Exec(
 			entry.Filename,
 			entry.LastModifiedTime,
 			videoStatus,
 		)
+
+		if rows, err := res.RowsAffected(); err == nil && rows > 0 {
+			fmt.Println("Found", entry.Filename)
+		}
 
 		if err != nil {
 			tx.Rollback()
@@ -209,6 +214,7 @@ func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 	}
 
 	files := make([]VideoFsEntry, len(entries))
+	file_index := 0
 	for _, entry := range entries {
 		if entry.IsDir() || !hasVideoExtension(entry.Name()) {
 			continue
@@ -219,12 +225,15 @@ func (repo VideoRepository) ListDirVideos() ([]VideoFsEntry, error) {
 			return nil, err
 		}
 
-		files = append(files, VideoFsEntry{
+		files[file_index] = VideoFsEntry{
 			Filename:         entry.Name(),
 			LastModifiedTime: info.ModTime(),
 			IsTruncated:      info.Size() <= 0,
-		})
+		}
+		file_index += 1
 	}
+
+	files = files[:file_index]
 
 	return files, nil
 }

@@ -72,12 +72,19 @@ css videoClass() {
 templ videoViewer(videoUrl templ.SafeURL) {
   <div class={videoHolderClass()}>
     <video
+      id="video-player"
       controls
       controlslist="nodownload"
       onEnded={exitFullscreenOnEnd()}
       class={videoClass()}>
       <source src={string(videoUrl)} />
     </video>
+    <script>
+      const video = document.getElementById('video-player');
+      video.addEventListener('wheel', ev => {
+        video.volume += (ev.deltaY > 0 ? -0.05 : 0.05)
+      }, {passive: true});
+    </script>
   </div>
 }
 

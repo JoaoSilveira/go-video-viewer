@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 )
 
 type VideoRepository struct {
@@ -17,7 +19,7 @@ func NewRepository(config Config) (VideoRepository, error) {
 
 	db, err := openDatabase(config.Database)
 	if err != nil {
-		return VideoRepository{}, nil
+		return VideoRepository{}, err
 	}
 	repo.db = db
 	repo.folderPath = config.VideoFolder
@@ -35,6 +37,8 @@ func (repo VideoRepository) ListAllSaved() ([]Video, error) {
 		select
 			id,
 			filename,
+			nickname,
+			tags,
 			created_at,
 			status
 		from
@@ -52,6 +56,8 @@ func (repo VideoRepository) NextInQueue(quantity int) ([]Video, error) {
 		select
 			id,
 			filename,
+			nickname,
+			tags,
 			created_at,
 			status
 		from
@@ -73,6 +79,8 @@ func (repo VideoRepository) FindById(id int32) (*Video, error) {
 		select
 			id,
 			filename,
+			nickname,
+			tags,
 			created_at,
 			status
 		from
@@ -103,13 +111,19 @@ func (repo VideoRepository) Update(video Video) error {
 	_, err := repo.db.Exec(
 		`
 		update videos set
-			status = ?
+			status = ?,
+			nickname = ?,
+			tags = ?
 		where
 			id = ?
 		`,
 		video.Status,
+		video.Nickname,
+		strings.Join(video.Tags, ","),
 		video.Id,
 	)
+
+	log.Println("Updated video", video.Id)
 
 	return err
 }
@@ -318,27 +332,105 @@ func openDatabase(path string) (*sql.DB, error) {
 			filename text not null unique,
 			created_at datetime not null,
 			status integer
-		)
+		);
+
+		create table if not exists migrations (
+			id integer primary key,
+			version integer not null
+		);
+
+		insert into migrations(id, version) values (1, 0)
+		on conflict(id) do nothing;
 	`)
 
 	if err != nil {
 		db.Close()
 		return nil, err
 	}
+	log.Println("Database opened")
+
+	if err = executeMigrations(db); err != nil {
+		return nil, err
+	}
+	log.Println("Migrations ran")
 
 	return db, nil
 }
 
+func executeMigrations(db *sql.DB) error {
+	migrations := [...]string{
+		`
+		alter table videos
+		add column nickname text;
+
+		alter table videos
+		add column tags text;
+		`,
+	}
+
+	rows, err := db.Query("select version from migrations where id = 1")
+	if err != nil {
+		return err
+	}
+
+	var version int
+	if !rows.Next() {
+		rows.Close()
+		return fmt.Errorf("No data found in migrations table, should not be possible")
+	}
+
+	if err = rows.Scan(&version); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+
+	trans, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, migration := range migrations[version:] {
+		_, err := trans.Exec(migration)
+		if err != nil {
+			_ = trans.Rollback()
+			return err
+		}
+	}
+
+	_, err = trans.Exec("update migrations set version = :version where id = 1", len(migrations))
+	if err != nil {
+		_ = trans.Rollback()
+		return err
+	}
+
+	return trans.Commit()
+}
+
 func readVideoFromRow(rows *sql.Rows) (Video, error) {
 	var video Video
+	var nickname sql.NullString
+	var tags sql.NullString
 	err := rows.Scan(
 		&video.Id,
 		&video.Filename,
+		&nickname,
+		&tags,
 		&video.CreatedAt,
 		&video.Status,
 	)
 	if err != nil {
 		return Video{}, err
+	}
+
+	if nickname.Valid {
+		video.Nickname = nickname.String
+	} else {
+		video.Nickname = ""
+	}
+
+	if tags.Valid {
+		video.Tags = strings.Split(tags.String, ",")
 	}
 
 	return video, nil

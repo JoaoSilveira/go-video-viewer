@@ -5,8 +5,10 @@ import (
 	"fmt"
 	inter "go-video-viewer/internals"
 	"go-video-viewer/templates"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -44,6 +46,7 @@ func handleGetHome(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("QueryStats() failed", err)
 		return
 	}
 
@@ -60,6 +63,7 @@ func handleGetNextVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("NextInQueue() failed", err)
 		return
 	}
 
@@ -81,6 +85,7 @@ func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusBadRequest,
 		)
+		log.Println("ParseForm() failed", err)
 		return
 	}
 
@@ -93,6 +98,7 @@ func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusBadRequest,
 		)
+		log.Print(err)
 		return
 	}
 
@@ -105,6 +111,7 @@ func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("NextInQueue failed:", err)
 		return
 	}
 
@@ -123,6 +130,7 @@ func handlePostNextVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("UpdateVideo failed:", err)
 		return
 	}
 
@@ -144,6 +152,7 @@ func handleGetVideoList(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("ListAllSaved failed:", err)
 		return
 	}
 
@@ -154,6 +163,7 @@ func handleGetWatch(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		renderError(r.Context(), w, "invalid id in url path", err, http.StatusBadRequest)
+		log.Println("invalid id:", r.PathValue("id"))
 		return
 	}
 
@@ -166,6 +176,7 @@ func handleGetWatch(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Printf("FindById '%v' failed: %v", id, err)
 		return
 	}
 
@@ -187,6 +198,7 @@ func handlePostWatch(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusBadRequest,
 		)
+		log.Println("invalid id:", r.PathValue("id"))
 		return
 	}
 
@@ -199,6 +211,7 @@ func handlePostWatch(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Printf("FindById '%v' failed: %v", id, err)
 		return
 	}
 
@@ -227,10 +240,13 @@ func handlePostWatch(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusBadRequest,
 		)
+		log.Println(err)
 		return
 	}
 
 	video.Status = newStatus
+	video.Nickname = r.FormValue("nickname")
+	video.Tags = strings.Split(r.FormValue("tags"), ",")
 	err = app.UpdateVideo(*video)
 	if err != nil {
 		renderError(
@@ -240,6 +256,7 @@ func handlePostWatch(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("UpdateVideo failed:", err)
 		return
 	}
 
@@ -250,6 +267,7 @@ func handleGetVideo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		renderError(r.Context(), w, "invalid id in url path", err, http.StatusBadRequest)
+		log.Println("invalid id:", r.PathValue("id"))
 		return
 	}
 
@@ -262,6 +280,7 @@ func handleGetVideo(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Printf("FindById '%v' failed: %v", id, err)
 		return
 	}
 
@@ -283,16 +302,21 @@ func handlePostUpdate(w http.ResponseWriter, r *http.Request) {
 			err,
 			http.StatusInternalServerError,
 		)
+		log.Println("UpdateRepoFromFolder() failed:", err)
 	}
 
 	http.Redirect(w, r, "/next-video", http.StatusMovedPermanently)
 }
 
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.Println("Booting up!")
+
 	app = inter.NewApp()
 	defer app.Close()
 
 	app.Init()
+	log.Println("Application initialized")
 
 	http.HandleFunc("GET /", handleGetHome)
 	http.HandleFunc("GET /next-video", handleGetNextVideo)
@@ -303,6 +327,6 @@ func main() {
 	http.HandleFunc("GET /video/{id}", handleGetVideo)
 	http.HandleFunc("POST /update", handlePostUpdate)
 
-	fmt.Printf("Listening on %v:%v\n", app.Config.Address, app.Config.Port)
+	log.Printf("Listening on %v:%v\n", app.Config.Address, app.Config.Port)
 	http.ListenAndServe(fmt.Sprintf("%v:%v", app.Config.Address, app.Config.Port), nil)
 }

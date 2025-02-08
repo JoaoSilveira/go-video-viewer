@@ -4,6 +4,7 @@ import (
   "fmt"
   inter "go-video-viewer/internals"
   "net/http"
+  "strings"
 )
 
 type Page int
@@ -88,26 +89,54 @@ templ videoViewer(videoUrl templ.SafeURL) {
   </div>
 }
 
+css videoFormClass() {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 1rem;
+  row-gap: .5rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
 css fieldSetClass() {
   display: flex;
   gap: 17px;
   justify-content: center;
+  margin-bottom: 0;
+  padding: .5rem;
+}
+
+css justifySelfEnd() {
+  justify-self: end;
+}
+
+css mb0() {
+  margin-bottom: 0;
 }
 
 css formSubmitClass() {
   width: 100%;
 }
 
-templ videoActionForm(status inter.VideoStatus) {
+templ videoActionForm(video inter.Video) {
   <form method="post">
-    <fieldset class={fieldSetClass()}>
-      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoWatched)} if status == inter.VideoUnwatched || status == inter.VideoWatched {checked="true"}> meh</label>
-      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoLiked)} if status == inter.VideoLiked {checked="true"}> like</label>
-      <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoSaved)} if status == inter.VideoSaved {checked="true"}> fave</label>
-    </fieldset>
+    <div class={videoFormClass()}>
+      <label class={justifySelfEnd()}>Nickname:</label>
+      <input class={mb0} type="text" name="nickname" value={video.Nickname}>
+
+      <label class={justifySelfEnd()}>Status:</label>
+      <fieldset class={fieldSetClass()}>
+        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoWatched)} if video.Status == inter.VideoUnwatched || video.Status == inter.VideoWatched {checked="true"}> meh</label>
+        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoLiked)} if video.Status == inter.VideoLiked {checked="true"}> like</label>
+        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoSaved)} if video.Status == inter.VideoSaved {checked="true"}> fave</label>
+      </fieldset>
+
+      <label class={justifySelfEnd()}>Tags:</label>
+      <input class={mb0} type="text" name="tags" value={strings.Join(video.Tags, ",")}>
+    </div>
 
     <button type="submit" class={formSubmitClass()}>
-      if status == inter.VideoUnwatched {
+      if video.Status == inter.VideoUnwatched {
         next
       } else {
         update
@@ -130,7 +159,7 @@ templ WatchVideo(video inter.Video) {
 
     <p style="text-align:center">{video.Filename}</p>
 
-    @videoActionForm(video.Status)
+    @videoActionForm(video)
   }
 }
 
@@ -144,7 +173,11 @@ templ ListSavedPage(videos []inter.Video) {
     } else {
       <ol>
         for _, video := range videos {
-          <li><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></li>
+          if video.Nickname != "" {
+            <li><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))} title={video.Filename}>({fmt.Sprint(video.Id)}) - {video.Nickname}</a></li>
+          } else {
+            <li><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></li>
+          }
         }
       </ol>
     }

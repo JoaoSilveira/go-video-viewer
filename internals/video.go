@@ -21,12 +21,16 @@ const (
 type Video struct {
 	Id        int32
 	Filename  string
+	Nickname  string
+	Tags      []string
 	CreatedAt time.Time
 	Status    VideoStatus
 }
 
 type VideoJsonEntry struct {
 	Name      string    `json:"name"`
+	Nickname  string    `json:"nickname"`
+	Tags      []string  `json:"tags"`
 	Date      time.Time `json:"date"`
 	Favorited bool      `json:"favorited"`
 	Saved     bool      `json:"save"`

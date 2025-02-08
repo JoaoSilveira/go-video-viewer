@@ -79,13 +79,13 @@ func tryCreateIniFile() error {
 	iniPath := getIniPath()
 	f, err := os.Create(iniPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create empty config file at '%v'. Error: %v", iniPath, err)
 	}
 	defer f.Close()
 
 	_, err = fmt.Fprint(f, "database=\nvideo_folder=")
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to write file: %v", err)
 	}
 
 	return errors.New("The .ini file was absent, a new one was created, please fill it up. Path: " + iniPath)

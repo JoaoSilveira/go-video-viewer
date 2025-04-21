@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Main</title>
+  <style>body { padding: 0; margin: 0; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="/index.js"></script>
+</head>
+
+<body>
+  <script>
+    let app = Elm.Main.init();
+    app.ports.togglePlayPausePort.subscribe(id => {
+      const video = document.getElementById(id);
+      if (!video) {
+        console.error(`could not find video with id "${id}"`);
+        return;
+      }
+
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    });
+
+    app.ports.toggleFullscreenPort.subscribe(id => {
+      if (!document.fullscreenEnabled) {
+        console.error("FULLSCREEN API NOT ENABLED");
+        return;
+      }
+
+      const video = document.getElementById(id);
+      if (!video) {
+        console.error(`could not find video with id "${id}"`);
+        return;
+      }
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        video.requestFullscreen();
+      }
+    });
+
+    app.ports.setVolumePort.subscribe(obj => {
+      const video = document.getElementById(obj.id);
+      if (!video) {
+        console.error(`could not find video with id "${id}"`);
+        return;
+      }
+      
+      video.volume = obj.volume;
+    });
+
+    app.ports.updateQueryParamsPort.subscribe(obj => {
+      const newUrl = new URL(window.location);
+
+      for (let key of Object.keys(obj)) {
+        newUrl.searchParams.set(key, obj[key]);
+      }
+
+      history.replaceState(null, '', newUrl);
+    });
+  </script>
+</body>
+</html>

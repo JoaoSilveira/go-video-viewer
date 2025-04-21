@@ -1,6 +1,8 @@
 package internals
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -18,13 +20,78 @@ const (
 	VideoSaved
 )
 
+type NullString sql.NullString
+
+func (ns NullString) MarshalJSON() ([]byte, error) {
+	if !ns.Valid {
+		return []byte("null"), nil
+	}
+
+	return json.Marshal(ns.String)
+}
+
+func (ns *NullString) UnmarshalJSON(data []byte) error {
+	if len(data) == 4 {
+		isNull := data[0] == 'n' &&
+			data[1] == 'u' &&
+			data[2] == 'l' &&
+			data[3] == 'l'
+
+		if isNull {
+			*ns = NullString{String: "", Valid: false}
+			return nil
+		}
+	}
+
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+
+	*ns = NullString{String: str, Valid: true}
+	return nil
+}
+
+func (ns *NullString) Scan(value any) error {
+	var str sql.NullString
+	if err := str.Scan(value); err != nil {
+		return err
+	}
+
+	*ns = NullString{str.String, str.Valid}
+	return nil
+}
+
 type Video struct {
-	Id        int32
-	Filename  string
-	Nickname  string
-	Tags      []string
-	CreatedAt time.Time
-	Status    VideoStatus
+	Id        int32       `json:"id"`
+	Filename  string      `json:"filename"`
+	Nickname  NullString  `json:"nickname"`
+	Tags      []string    `json:"tags"`
+	CreatedAt time.Time   `json:"created_at"`
+	Status    VideoStatus `json:"status"`
+}
+
+type LastUpdateResponse struct {
+	LastUpdate *time.Time `json:"last_update"`
+}
+
+type VideoUpdatePayload struct {
+	Nickname NullString  `json:"nickname"`
+	Tags     []string    `json:"tags"`
+	Status   VideoStatus `json:"status"`
+}
+
+type VideoResponse struct {
+	Video Video  `json:"video"`
+	Next  *Video `json:"next"`
+}
+
+type VideoListResponse struct {
+	Videos []Video `json:"videos"`
+}
+
+type VideoStatsResponse struct {
+	Stats VideoStats `json:"stats"`
 }
 
 type VideoJsonEntry struct {
@@ -49,10 +116,10 @@ type VideoFsEntry struct {
 }
 
 type VideoStats struct {
-	Unwatched int
-	Watched   int
-	Liked     int
-	Saved     int
+	Unwatched int `json:"unwatched"`
+	Watched   int `json:"watched"`
+	Liked     int `json:"liked"`
+	Saved     int `json:"saved"`
 }
 
 func StatusFromWatchedEntry(entry VideoJsonEntry) VideoStatus {

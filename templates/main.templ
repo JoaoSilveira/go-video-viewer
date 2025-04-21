@@ -1,51 +1,65 @@
 package templates
 
 import (
-  "fmt"
-  inter "go-video-viewer/internals"
-  "net/http"
-  "strings"
+	"fmt"
+	inter "go-video-viewer/internals"
+	"net/http"
+	"strings"
 )
 
 type Page int
 
 const (
-  WatchNext Page = iota + 1
-  ListSaved
-  Home
+	WatchNext Page = iota + 1
+	ListSaved
+	Home
 )
 
 func videoUrl(video inter.Video) templ.SafeURL {
-  return templ.URL(fmt.Sprintf("/video/%v", video.Id))
+	return templ.URL(fmt.Sprintf("/video/%v", video.Id))
 }
 
 templ header(activePage Page) {
-  <nav>
-    <a href="/" if activePage == Home {aria-current="page"}>Home</a>
-    <a href="/next-video" if activePage == WatchNext {aria-current="page"}>Watch Queue</a>
-    <a href="/video-list" if activePage == ListSaved {aria-current="page"}>Saved List</a>
-  </nav>
+	<nav>
+		<a
+			href="/"
+			if activePage == Home {
+				aria-current="page"
+			}
+		>Home</a>
+		<a
+			href="/next-video"
+			if activePage == WatchNext {
+				aria-current="page"
+			}
+		>Watch Queue</a>
+		<a
+			href="/video-list"
+			if activePage == ListSaved {
+				aria-current="page"
+			}
+		>Saved List</a>
+	</nav>
 }
 
 templ mainPage(title string, activePage Page) {
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8"/>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-      <title>{title}</title>
-      <style>:root{--sans-font:-apple-system,BlinkMacSystemFont,"Avenir Next",Avenir,"Nimbus Sans L",Roboto,"Noto Sans","Segoe UI",Arial,Helvetica,"Helvetica Neue",sans-serif;--mono-font:Consolas,Menlo,Monaco,"Andale Mono","Ubuntu Mono",monospace;--standard-border-radius:5px;--bg:#fff;--accent-bg:#f5f7ff;--text:#212121;--text-light:#585858;--border:#898ea4;--accent:#0d47a1;--accent-hover:#1266e2;--accent-text:var(--bg);--code:#d81b60;--preformatted:#444;--marked:#fd3;--disabled:#efefef}@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#212121;--accent-bg:#2b2b2b;--text:#dcdcdc;--text-light:#ababab;--accent:#ffb300;--accent-hover:#ffe099;--accent-text:var(--bg);--code:#f06292;--preformatted:#ccc;--disabled:#111}img,video{opacity:.8}}*,:before,:after{box-sizing:border-box}textarea,select,input,progress{-webkit-appearance:none;-moz-appearance:none;appearance:none}html{font-family:var(--sans-font);scroll-behavior:smooth}body{color:var(--text);background-color:var(--bg);grid-template-columns:1fr min(45rem,90%) 1fr;margin:0;font-size:1.15rem;line-height:1.5;display:grid}body>*{grid-column:2}body>header{background-color:var(--accent-bg);border-bottom:1px solid var(--border);text-align:center;grid-column:1/-1;padding:0 .5rem 2rem}body>header>:only-child{margin-block-start:2rem}body>header h1{max-width:1200px;margin:1rem auto}body>header p{max-width:40rem;margin:1rem auto}main{padding-top:1.5rem}body>footer{color:var(--text-light);text-align:center;border-top:1px solid var(--border);margin-top:4rem;padding:2rem 1rem 1.5rem;font-size:.9rem}h1{font-size:3rem}h2{margin-top:3rem;font-size:2.6rem}h3{margin-top:3rem;font-size:2rem}h4{font-size:1.44rem}h5{font-size:1.15rem}h6{font-size:.96rem}p{margin:1.5rem 0}p,h1,h2,h3,h4,h5,h6{overflow-wrap:break-word}h1,h2,h3{line-height:1.1}@media only screen and (width<=720px){h1{font-size:2.5rem}h2{font-size:2.1rem}h3{font-size:1.75rem}h4{font-size:1.25rem}}a,a:visited{color:var(--accent)}a:hover{text-decoration:none}button,.button,a.button,input[type=submit],input[type=reset],input[type=button]{border:1px solid var(--accent);background-color:var(--accent);color:var(--accent-text);padding:.5rem .9rem;line-height:normal;text-decoration:none}.button[aria-disabled=true],input:disabled,textarea:disabled,select:disabled,button[disabled]{cursor:not-allowed;background-color:var(--disabled);border-color:var(--disabled);color:var(--text-light)}input[type=range]{padding:0}abbr[title]{cursor:help;text-decoration-line:underline;text-decoration-style:dotted}button:enabled:hover,.button:not([aria-disabled=true]):hover,input[type=submit]:enabled:hover,input[type=reset]:enabled:hover,input[type=button]:enabled:hover{background-color:var(--accent-hover);border-color:var(--accent-hover);cursor:pointer}.button:focus-visible,button:focus-visible:where(:enabled),input:enabled:focus-visible:where([type=submit],[type=reset],[type=button]){outline:2px solid var(--accent);outline-offset:1px}header>nav{padding:1rem 0 0;font-size:1rem;line-height:2}header>nav ul,header>nav ol{flex-flow:wrap;place-content:space-around center;align-items:center;margin:0;padding:0;list-style-type:none;display:flex}header>nav ul li,header>nav ol li{display:inline-block}header>nav a,header>nav a:visited{border:1px solid var(--border);border-radius:var(--standard-border-radius);color:var(--text);margin:0 .5rem 1rem;padding:.1rem 1rem;text-decoration:none;display:inline-block}header>nav a:hover,header>nav a.current,header>nav a[aria-current=page],header>nav a[aria-current=true]{border-color:var(--accent);color:var(--accent);cursor:pointer}@media only screen and (width<=720px){header>nav a{border:none;padding:0;line-height:1;text-decoration:underline}}aside,details,pre,progress{background-color:var(--accent-bg);border:1px solid var(--border);border-radius:var(--standard-border-radius);margin-bottom:1rem}aside{float:right;width:30%;margin-inline-start:15px;padding:0 15px;font-size:1rem}[dir=rtl] aside{float:left}@media only screen and (width<=720px){aside{float:none;width:100%;margin-inline-start:0}}article,fieldset,dialog{border:1px solid var(--border);border-radius:var(--standard-border-radius);margin-bottom:1rem;padding:1rem}article h2:first-child,section h2:first-child,article h3:first-child,section h3:first-child{margin-top:1rem}section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:3rem 0;padding:2rem 1rem}section+section,section:first-child{border-top:0;padding-top:0}section+section{margin-top:0}section:last-child{border-bottom:0;padding-bottom:0}details{padding:.7rem 1rem}summary{cursor:pointer;word-break:break-all;margin:-.7rem -1rem;padding:.7rem 1rem;font-weight:700}details[open]>summary+*{margin-top:0}details[open]>summary{margin-bottom:.5rem}details[open]>:last-child{margin-bottom:0}table{border-collapse:collapse;margin:1.5rem 0}figure>table{width:max-content;margin:0}td,th{border:1px solid var(--border);text-align:start;padding:.5rem}th{background-color:var(--accent-bg);font-weight:700}tr:nth-child(2n){background-color:var(--accent-bg)}table caption{margin-bottom:.5rem;font-weight:700}textarea,select,input,button,.button{font-size:inherit;border-radius:var(--standard-border-radius);box-shadow:none;max-width:100%;margin-bottom:.5rem;padding:.5rem;font-family:inherit;display:inline-block}textarea,select,input{color:var(--text);background-color:var(--bg);border:1px solid var(--border)}label{display:block}textarea:not([cols]){width:100%}select:not([multiple]){background-image:linear-gradient(45deg,transparent 49%,var(--text)51%),linear-gradient(135deg,var(--text)51%,transparent 49%);background-position:calc(100% - 15px),calc(100% - 10px);background-repeat:no-repeat;background-size:5px 5px,5px 5px;padding-inline-end:25px}[dir=rtl] select:not([multiple]){background-position:10px,15px}input[type=checkbox],input[type=radio]{vertical-align:middle;width:min-content;position:relative}input[type=checkbox]+label,input[type=radio]+label{display:inline-block}input[type=radio]{border-radius:100%}input[type=checkbox]:checked,input[type=radio]:checked{background-color:var(--accent)}input[type=checkbox]:checked:after{content:" ";border-right:solid var(--bg).08em;border-bottom:solid var(--bg).08em;background-color:#0000;border-radius:0;width:.18em;height:.32em;font-size:1.8em;position:absolute;top:.05em;left:.17em;transform:rotate(45deg)}input[type=radio]:checked:after{content:" ";background-color:var(--bg);border-radius:100%;width:.25em;height:.25em;font-size:32px;position:absolute;top:.125em;left:.125em}@media only screen and (width<=720px){textarea,select,input{width:100%}}input[type=color]{height:2.5rem;padding:.2rem}input[type=file]{border:0}hr{background:var(--border);border:none;height:1px;margin:1rem auto}mark{border-radius:var(--standard-border-radius);background-color:var(--marked);color:#000;padding:2px 5px}mark a{color:#0d47a1}img,video{border-radius:var(--standard-border-radius);max-width:100%;height:auto}figure{margin:0;display:block;overflow-x:auto}figure>img,figure>picture>img{margin-inline:auto;display:block}figcaption{text-align:center;color:var(--text-light);margin-block:1rem;font-size:.9rem}blockquote{border-inline-start:.35rem solid var(--accent);color:var(--text-light);margin-block:2rem;margin-inline:2rem 0;padding:.4rem .8rem;font-style:italic}cite{color:var(--text-light);font-size:.9rem;font-style:normal}dt{color:var(--text-light)}code,pre,pre span,kbd,samp{font-family:var(--mono-font);color:var(--code)}kbd{color:var(--preformatted);border:1px solid var(--preformatted);border-bottom:3px solid var(--preformatted);border-radius:var(--standard-border-radius);padding:.1rem .4rem}pre{color:var(--preformatted);max-width:100%;padding:1rem 1.4rem;overflow:auto}pre code{color:var(--preformatted);background:0 0;margin:0;padding:0}progress{width:100%}progress:indeterminate{background-color:var(--accent-bg)}progress::-webkit-progress-bar{border-radius:var(--standard-border-radius);background-color:var(--accent-bg)}progress::-webkit-progress-value{border-radius:var(--standard-border-radius);background-color:var(--accent)}progress::-moz-progress-bar{border-radius:var(--standard-border-radius);background-color:var(--accent);transition-property:width;transition-duration:.3s}progress:indeterminate::-moz-progress-bar{background-color:var(--accent-bg)}dialog{background-color:var(--bg);max-width:40rem;margin:auto}dialog::backdrop{background-color:var(--bg);opacity:.8}@media only screen and (width<=720px){dialog{max-width:100%;margin:auto 1em}}sup,sub{vertical-align:baseline;position:relative}sup{top:-.4em}sub{top:.3em}.notice{background:var(--accent-bg);border:2px solid var(--border);border-radius:var(--standard-border-radius);margin:2rem 0;padding:1.5rem}</style>
-    </head>
-    <body>
-      <header>
-        @header(activePage)
-      </header>
-
-      <main>
-        {children...}
-      </main>
-    </body>
-  </html>
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<style>:root{--sans-font:-apple-system,BlinkMacSystemFont,"Avenir Next",Avenir,"Nimbus Sans L",Roboto,"Noto Sans","Segoe UI",Arial,Helvetica,"Helvetica Neue",sans-serif;--mono-font:Consolas,Menlo,Monaco,"Andale Mono","Ubuntu Mono",monospace;--standard-border-radius:5px;--bg:#fff;--accent-bg:#f5f7ff;--text:#212121;--text-light:#585858;--border:#898ea4;--accent:#0d47a1;--accent-hover:#1266e2;--accent-text:var(--bg);--code:#d81b60;--preformatted:#444;--marked:#fd3;--disabled:#efefef}@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#212121;--accent-bg:#2b2b2b;--text:#dcdcdc;--text-light:#ababab;--accent:#ffb300;--accent-hover:#ffe099;--accent-text:var(--bg);--code:#f06292;--preformatted:#ccc;--disabled:#111}img,video{opacity:.8}}*,:before,:after{box-sizing:border-box}textarea,select,input,progress{-webkit-appearance:none;-moz-appearance:none;appearance:none}html{font-family:var(--sans-font);scroll-behavior:smooth}body{color:var(--text);background-color:var(--bg);grid-template-columns:1fr min(45rem,90%) 1fr;margin:0;font-size:1.15rem;line-height:1.5;display:grid}body>*{grid-column:2}body>header{background-color:var(--accent-bg);border-bottom:1px solid var(--border);text-align:center;grid-column:1/-1;padding:0 .5rem 2rem}body>header>:only-child{margin-block-start:2rem}body>header h1{max-width:1200px;margin:1rem auto}body>header p{max-width:40rem;margin:1rem auto}main{padding-top:1.5rem}body>footer{color:var(--text-light);text-align:center;border-top:1px solid var(--border);margin-top:4rem;padding:2rem 1rem 1.5rem;font-size:.9rem}h1{font-size:3rem}h2{margin-top:3rem;font-size:2.6rem}h3{margin-top:3rem;font-size:2rem}h4{font-size:1.44rem}h5{font-size:1.15rem}h6{font-size:.96rem}p{margin:1.5rem 0}p,h1,h2,h3,h4,h5,h6{overflow-wrap:break-word}h1,h2,h3{line-height:1.1}@media only screen and (width<=720px){h1{font-size:2.5rem}h2{font-size:2.1rem}h3{font-size:1.75rem}h4{font-size:1.25rem}}a,a:visited{color:var(--accent)}a:hover{text-decoration:none}button,.button,a.button,input[type=submit],input[type=reset],input[type=button]{border:1px solid var(--accent);background-color:var(--accent);color:var(--accent-text);padding:.5rem .9rem;line-height:normal;text-decoration:none}.button[aria-disabled=true],input:disabled,textarea:disabled,select:disabled,button[disabled]{cursor:not-allowed;background-color:var(--disabled);border-color:var(--disabled);color:var(--text-light)}input[type=range]{padding:0}abbr[title]{cursor:help;text-decoration-line:underline;text-decoration-style:dotted}button:enabled:hover,.button:not([aria-disabled=true]):hover,input[type=submit]:enabled:hover,input[type=reset]:enabled:hover,input[type=button]:enabled:hover{background-color:var(--accent-hover);border-color:var(--accent-hover);cursor:pointer}.button:focus-visible,button:focus-visible:where(:enabled),input:enabled:focus-visible:where([type=submit],[type=reset],[type=button]){outline:2px solid var(--accent);outline-offset:1px}header>nav{padding:1rem 0 0;font-size:1rem;line-height:2}header>nav ul,header>nav ol{flex-flow:wrap;place-content:space-around center;align-items:center;margin:0;padding:0;list-style-type:none;display:flex}header>nav ul li,header>nav ol li{display:inline-block}header>nav a,header>nav a:visited{border:1px solid var(--border);border-radius:var(--standard-border-radius);color:var(--text);margin:0 .5rem 1rem;padding:.1rem 1rem;text-decoration:none;display:inline-block}header>nav a:hover,header>nav a.current,header>nav a[aria-current=page],header>nav a[aria-current=true]{border-color:var(--accent);color:var(--accent);cursor:pointer}@media only screen and (width<=720px){header>nav a{border:none;padding:0;line-height:1;text-decoration:underline}}aside,details,pre,progress{background-color:var(--accent-bg);border:1px solid var(--border);border-radius:var(--standard-border-radius);margin-bottom:1rem}aside{float:right;width:30%;margin-inline-start:15px;padding:0 15px;font-size:1rem}[dir=rtl] aside{float:left}@media only screen and (width<=720px){aside{float:none;width:100%;margin-inline-start:0}}article,fieldset,dialog{border:1px solid var(--border);border-radius:var(--standard-border-radius);margin-bottom:1rem;padding:1rem}article h2:first-child,section h2:first-child,article h3:first-child,section h3:first-child{margin-top:1rem}section{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:3rem 0;padding:2rem 1rem}section+section,section:first-child{border-top:0;padding-top:0}section+section{margin-top:0}section:last-child{border-bottom:0;padding-bottom:0}details{padding:.7rem 1rem}summary{cursor:pointer;word-break:break-all;margin:-.7rem -1rem;padding:.7rem 1rem;font-weight:700}details[open]>summary+*{margin-top:0}details[open]>summary{margin-bottom:.5rem}details[open]>:last-child{margin-bottom:0}table{border-collapse:collapse;margin:1.5rem 0}figure>table{width:max-content;margin:0}td,th{border:1px solid var(--border);text-align:start;padding:.5rem}th{background-color:var(--accent-bg);font-weight:700}tr:nth-child(2n){background-color:var(--accent-bg)}table caption{margin-bottom:.5rem;font-weight:700}textarea,select,input,button,.button{font-size:inherit;border-radius:var(--standard-border-radius);box-shadow:none;max-width:100%;margin-bottom:.5rem;padding:.5rem;font-family:inherit;display:inline-block}textarea,select,input{color:var(--text);background-color:var(--bg);border:1px solid var(--border)}label{display:block}textarea:not([cols]){width:100%}select:not([multiple]){background-image:linear-gradient(45deg,transparent 49%,var(--text)51%),linear-gradient(135deg,var(--text)51%,transparent 49%);background-position:calc(100% - 15px),calc(100% - 10px);background-repeat:no-repeat;background-size:5px 5px,5px 5px;padding-inline-end:25px}[dir=rtl] select:not([multiple]){background-position:10px,15px}input[type=checkbox],input[type=radio]{vertical-align:middle;width:min-content;position:relative}input[type=checkbox]+label,input[type=radio]+label{display:inline-block}input[type=radio]{border-radius:100%}input[type=checkbox]:checked,input[type=radio]:checked{background-color:var(--accent)}input[type=checkbox]:checked:after{content:" ";border-right:solid var(--bg).08em;border-bottom:solid var(--bg).08em;background-color:#0000;border-radius:0;width:.18em;height:.32em;font-size:1.8em;position:absolute;top:.05em;left:.17em;transform:rotate(45deg)}input[type=radio]:checked:after{content:" ";background-color:var(--bg);border-radius:100%;width:.25em;height:.25em;font-size:32px;position:absolute;top:.125em;left:.125em}@media only screen and (width<=720px){textarea,select,input{width:100%}}input[type=color]{height:2.5rem;padding:.2rem}input[type=file]{border:0}hr{background:var(--border);border:none;height:1px;margin:1rem auto}mark{border-radius:var(--standard-border-radius);background-color:var(--marked);color:#000;padding:2px 5px}mark a{color:#0d47a1}img,video{border-radius:var(--standard-border-radius);max-width:100%;height:auto}figure{margin:0;display:block;overflow-x:auto}figure>img,figure>picture>img{margin-inline:auto;display:block}figcaption{text-align:center;color:var(--text-light);margin-block:1rem;font-size:.9rem}blockquote{border-inline-start:.35rem solid var(--accent);color:var(--text-light);margin-block:2rem;margin-inline:2rem 0;padding:.4rem .8rem;font-style:italic}cite{color:var(--text-light);font-size:.9rem;font-style:normal}dt{color:var(--text-light)}code,pre,pre span,kbd,samp{font-family:var(--mono-font);color:var(--code)}kbd{color:var(--preformatted);border:1px solid var(--preformatted);border-bottom:3px solid var(--preformatted);border-radius:var(--standard-border-radius);padding:.1rem .4rem}pre{color:var(--preformatted);max-width:100%;padding:1rem 1.4rem;overflow:auto}pre code{color:var(--preformatted);background:0 0;margin:0;padding:0}progress{width:100%}progress:indeterminate{background-color:var(--accent-bg)}progress::-webkit-progress-bar{border-radius:var(--standard-border-radius);background-color:var(--accent-bg)}progress::-webkit-progress-value{border-radius:var(--standard-border-radius);background-color:var(--accent)}progress::-moz-progress-bar{border-radius:var(--standard-border-radius);background-color:var(--accent);transition-property:width;transition-duration:.3s}progress:indeterminate::-moz-progress-bar{background-color:var(--accent-bg)}dialog{background-color:var(--bg);max-width:40rem;margin:auto}dialog::backdrop{background-color:var(--bg);opacity:.8}@media only screen and (width<=720px){dialog{max-width:100%;margin:auto 1em}}sup,sub{vertical-align:baseline;position:relative}sup{top:-.4em}sub{top:.3em}.notice{background:var(--accent-bg);border:2px solid var(--border);border-radius:var(--standard-border-radius);margin:2rem 0;padding:1.5rem}</style>
+		</head>
+		<body>
+			<header>
+				@header(activePage)
+			</header>
+			<main>
+				{ children... }
+			</main>
+		</body>
+	</html>
 }
 
 script exitFullscreenOnEnd() {
@@ -57,192 +71,213 @@ script exitFullscreenOnEnd() {
 }
 
 css videoHolderClass() {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-  padding: 21px 55px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 100%;
+	padding: 21px 55px;
 }
 
 css videoClass() {
-  display: block;
-  max-width: 100%;
-  max-height: calc(100cqh - 150px);
+	display: block;
+	max-width: 100%;
+	max-height: calc(100cqh - 150px);
 }
 
 templ videoViewer(videoUrl templ.SafeURL) {
-  <div class={videoHolderClass()}>
-    <video
-      id="video-player"
-      controls
-      controlslist="nodownload"
-      onEnded={exitFullscreenOnEnd()}
-      class={videoClass()}>
-      <source src={string(videoUrl)} />
-    </video>
-    <script>
+	<div class={ videoHolderClass() }>
+		<video
+			id="video-player"
+			controls
+			controlslist="nodownload"
+			onEnded={ exitFullscreenOnEnd() }
+			class={ videoClass() }
+		>
+			<source src={ string(videoUrl) }/>
+		</video>
+		<script>
       const video = document.getElementById('video-player');
       video.addEventListener('wheel', ev => {
         video.volume += (ev.deltaY > 0 ? -0.05 : 0.05)
       }, {passive: true});
     </script>
-  </div>
+	</div>
 }
 
 css videoFormClass() {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 1rem;
-  row-gap: .5rem;
-  align-items: center;
-  margin-bottom: 2rem;
+	display: grid;
+	grid-template-columns: auto 1fr;
+	column-gap: 1rem;
+	row-gap: .5rem;
+	align-items: center;
+	margin-bottom: 2rem;
 }
 
 css fieldSetClass() {
-  display: flex;
-  gap: 17px;
-  justify-content: center;
-  margin-bottom: 0;
-  padding: .5rem;
+	display: flex;
+	gap: 17px;
+	justify-content: center;
+	margin-bottom: 0;
+	padding: .5rem;
 }
 
 css justifySelfEnd() {
-  justify-self: end;
+	justify-self: end;
 }
 
 css mb0() {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 css formSubmitClass() {
-  width: 100%;
+	width: 100%;
 }
 
 templ videoActionForm(video inter.Video) {
-  <form method="post">
-    <div class={videoFormClass()}>
-      <label class={justifySelfEnd()}>Nickname:</label>
-      <input class={mb0} type="text" name="nickname" value={video.Nickname}>
-
-      <label class={justifySelfEnd()}>Status:</label>
-      <fieldset class={fieldSetClass()}>
-        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoWatched)} if video.Status == inter.VideoUnwatched || video.Status == inter.VideoWatched {checked="true"}> meh</label>
-        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoLiked)} if video.Status == inter.VideoLiked {checked="true"}> like</label>
-        <label><input type="radio" name="status" value={fmt.Sprint(inter.VideoSaved)} if video.Status == inter.VideoSaved {checked="true"}> fave</label>
-      </fieldset>
-
-      <label class={justifySelfEnd()}>Tags:</label>
-      <input class={mb0} type="text" name="tags" value={strings.Join(video.Tags, ",")}>
-    </div>
-
-    <button type="submit" class={formSubmitClass()}>
-      if video.Status == inter.VideoUnwatched {
-        next
-      } else {
-        update
-      }
-    </button>
-  </form>
+	<form method="post">
+		<div class={ videoFormClass() }>
+			<label class={ justifySelfEnd() }>Nickname:</label>
+			if video.Nickname.Valid {
+				<input class={ mb0 } type="text" name="nickname" value={ video.Nickname.String }/>
+			} else {
+				<input class={ mb0 } type="text" name="nickname" value=""/>
+			}
+			<label class={ justifySelfEnd() }>Status:</label>
+			<fieldset class={ fieldSetClass() }>
+				<label>
+					<input
+						type="radio"
+						name="status"
+						value={ fmt.Sprint(inter.VideoWatched) }
+						if video.Status == inter.VideoUnwatched || video.Status == inter.VideoWatched {
+							checked="true"
+						}
+					/> meh
+				</label>
+				<label>
+					<input
+						type="radio"
+						name="status"
+						value={ fmt.Sprint(inter.VideoLiked) }
+						if video.Status == inter.VideoLiked {
+							checked="true"
+						}
+					/> like
+				</label>
+				<label>
+					<input
+						type="radio"
+						name="status"
+						value={ fmt.Sprint(inter.VideoSaved) }
+						if video.Status == inter.VideoSaved {
+							checked="true"
+						}
+					/> fave
+				</label>
+			</fieldset>
+			<label class={ justifySelfEnd() }>Tags:</label>
+			<input class={ mb0 } type="text" name="tags" value={ strings.Join(video.Tags, ",") }/>
+		</div>
+		<button type="submit" class={ formSubmitClass() }>
+			if video.Status == inter.VideoUnwatched {
+				next
+			} else {
+				update
+			}
+		</button>
+	</form>
 }
 
 func pageForVideo(video inter.Video) Page {
-  if video.Status == inter.VideoUnwatched {
-    return WatchNext
-  }
-  
-  return -1
+	if video.Status == inter.VideoUnwatched {
+		return WatchNext
+	}
+
+	return -1
 }
 
 templ WatchVideo(video inter.Video) {
-  @mainPage("Watch Queue", pageForVideo(video)) {
-    @videoViewer(videoUrl(video))
-
-    <p style="text-align:center">{video.Filename}</p>
-
-    @videoActionForm(video)
-  }
+	@mainPage("Watch Queue", pageForVideo(video)) {
+		@videoViewer(videoUrl(video))
+		<p style="text-align:center">{ video.Filename }</p>
+		@videoActionForm(video)
+	}
 }
 
 templ ListSavedPage(videos []inter.Video) {
-  @mainPage("Saved video list", ListSaved) {
-    <h1>Saved Videos</h1>
-
-    if len(videos) == 0 {
-      <p>Wow, such empty!</p>
-      <p>There are no saved videos 😔</p>
-    } else {
-      <ol>
-        for _, video := range videos {
-          if video.Nickname != "" {
-            <li><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))} title={video.Filename}>({fmt.Sprint(video.Id)}) - {video.Nickname}</a></li>
-          } else {
-            <li><a href={templ.URL(fmt.Sprintf("/watch/%v", video.Id))}>{video.Filename}</a></li>
-          }
-        }
-      </ol>
-    }
-  }
+	@mainPage("Saved video list", ListSaved) {
+		<h1>Saved Videos</h1>
+		if len(videos) == 0 {
+			<p>Wow, such empty!</p>
+			<p>There are no saved videos 😔</p>
+		} else {
+			<ol>
+				for _, video := range videos {
+					if video.Nickname.Valid {
+						<li><a href={ templ.URL(fmt.Sprintf("/watch/%v", video.Id)) } title={ video.Filename }>({ fmt.Sprint(video.Id) }) - { video.Nickname.String }</a></li>
+					} else {
+						<li><a href={ templ.URL(fmt.Sprintf("/watch/%v", video.Id)) }>{ video.Filename }</a></li>
+					}
+				}
+			</ol>
+		}
+	}
 }
 
 templ ErrorPage(status int, msg string, cause error) {
-  @mainPage(fmt.Sprintf("error - %v", status), -1) {
-    <h1>Error {fmt.Sprint(status)} - {http.StatusText(status)}</h1>
-    <p>{msg}</p>
-    <pre>{cause.Error()}</pre>
-  }
+	@mainPage(fmt.Sprintf("error - %v", status), -1) {
+		<h1>Error { fmt.Sprint(status) } - { http.StatusText(status) }</h1>
+		<p>{ msg }</p>
+		<pre>{ cause.Error() }</pre>
+	}
 }
 
 templ VideoNotFoundPage(id int) {
-  @mainPage("Video not found", -1) {
-    <h1>Oh no! Something seems to be missing...</h1>
-
-    <p>The video (id: {fmt.Sprint(id)}) doesn't seem to be in the database 😱</p>
-  }
+	@mainPage("Video not found", -1) {
+		<h1>Oh no! Something seems to be missing...</h1>
+		<p>The video (id: { fmt.Sprint(id) }) doesn't seem to be in the database 😱</p>
+	}
 }
 
-
 templ NoNextVideoPage() {
-  @mainPage("Video not found", -1) {
-    <h1>No Next Video</h1>
-
-    <p>You emptied the queue, good work!</p>
-    <p>Or... you could maybe try updating the database...</p>
-    
-    <form action="/update" method="post">
-      <button type="submit" class={formSubmitClass()}>update</button>
-    </form>
-  }
+	@mainPage("Video not found", -1) {
+		<h1>No Next Video</h1>
+		<p>You emptied the queue, good work!</p>
+		<p>Or... you could maybe try updating the database...</p>
+		<form action="/update" method="post">
+			<button type="submit" class={ formSubmitClass() }>update</button>
+		</form>
+	}
 }
 
 templ HomePage(stats inter.VideoStats) {
-  @mainPage("Video stats", Home) {
-    <h1>Videos Status</h1>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Status</th>
-          <th>Quantity</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Unwatched</td>
-          <td>{fmt.Sprint(stats.Unwatched)}</td>
-        </tr>
-        <tr>
-          <td>Watched</td>
-          <td>{fmt.Sprint(stats.Watched)}</td>
-        </tr>
-        <tr>
-          <td>Liked</td>
-          <td>{fmt.Sprint(stats.Liked)}</td>
-        </tr>
-        <tr>
-          <td>Saved</td>
-          <td>{fmt.Sprint(stats.Saved)}</td>
-        </tr>
-      </tbody>
-    </table>
-  }
+	@mainPage("Video stats", Home) {
+		<h1>Videos Status</h1>
+		<table>
+			<thead>
+				<tr>
+					<th>Status</th>
+					<th>Quantity</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Unwatched</td>
+					<td>{ fmt.Sprint(stats.Unwatched) }</td>
+				</tr>
+				<tr>
+					<td>Watched</td>
+					<td>{ fmt.Sprint(stats.Watched) }</td>
+				</tr>
+				<tr>
+					<td>Liked</td>
+					<td>{ fmt.Sprint(stats.Liked) }</td>
+				</tr>
+				<tr>
+					<td>Saved</td>
+					<td>{ fmt.Sprint(stats.Saved) }</td>
+				</tr>
+			</tbody>
+		</table>
+	}
 }

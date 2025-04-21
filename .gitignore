@@ -1,3 +1,4 @@
 bin/
 templates/**/*.go
 *.db
+public/index.js

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 )
 
 type App struct {
@@ -64,6 +65,10 @@ func (app App) UpdateRepoFromFolder() error {
 	}
 
 	return app.Repo.ImportFsEntries(entries)
+}
+
+func (app App) LastFolderUpdate() (*time.Time, error) {
+	return app.Repo.LastFolderUpdate()
 }
 
 func (app App) VideoPath(video Video) string {

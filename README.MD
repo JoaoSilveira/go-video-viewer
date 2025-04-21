@@ -99,3 +99,7 @@ So to import this data into this project you can inform the command line argumen
 ```bash
 .\go-video-viewer.exe --json-file "path to the json file"
 ```
+
+
+[23.4do (Ichiri)] My Ideal Life In Another World Vol. 4
+    join pages 38 and 39

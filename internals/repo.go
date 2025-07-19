@@ -179,10 +179,17 @@ func (repo VideoRepository) NextSavedById(id int32) (*Video, error) {
 
 func (repo VideoRepository) Update(video Video) error {
 	var nickname any
-	if video.Nickname.Valid {
+	if video.Nickname.Valid && len(video.Nickname.String) > 0 {
 		nickname = video.Nickname.String
 	} else {
 		nickname = nil
+	}
+
+	var tags any
+	if len(video.Tags) > 0 {
+		tags = strings.Join(video.Tags, ",")
+	} else {
+		tags = nil
 	}
 
 	_, err := repo.db.Exec(
@@ -196,7 +203,7 @@ func (repo VideoRepository) Update(video Video) error {
 		`,
 		video.Status,
 		nickname,
-		strings.Join(video.Tags, ","),
+		tags,
 		video.Id,
 	)
 

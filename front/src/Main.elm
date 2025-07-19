@@ -19,6 +19,7 @@ import Time
 import TypedSvg.Attributes
 import Url
 import Util exposing (AsyncResource(..))
+import Routes exposing (areUrlsSamePage)
 
 
 type PageModel
@@ -140,11 +141,7 @@ update msg model =
         ( _, LinkClicked urlRequest ) ->
             case urlRequest of
                 Browser.Internal url ->
-                    let
-                        ( newModel, cmd ) =
-                            modelCmdFromRoute model.key (Model model.key url model.lastUpdate) (routeFromUrl url)
-                    in
-                    ( newModel, Cmd.batch [ Nav.pushUrl model.key (Url.toString url), cmd ] )
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
 
                 Browser.External href ->
                     ( model, Nav.load href )
@@ -154,7 +151,13 @@ update msg model =
                 ( newModel, cmd ) =
                     modelCmdFromRoute model.key (Model model.key url model.lastUpdate) (routeFromUrl url)
             in
-            ( newModel, cmd )
+            -- keep current page model
+            if areUrlsSamePage model.url url then
+                (model, Cmd.none)
+
+            -- update model and init new page
+            else
+                ( newModel, cmd )
 
         ( _, GotLastUpdate res ) ->
             case res of

@@ -5,6 +5,7 @@ import Iso8601
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
+import Util exposing (optionalList)
 
 
 type VideoStatus
@@ -57,11 +58,12 @@ updateVideo : Int -> VideoUpdatePayload -> (Result Http.Error () -> msg) -> Cmd 
 updateVideo id video msg =
     let
         jsonPayload =
-            Encode.object
-                [ ( "nickname", Encode.string video.nickname )
-                , ( "status", Encode.int <| encodeStatus video.status )
-                , ( "tags", Encode.list Encode.string video.tags )
-                ]
+            Encode.object <|
+                optionalList
+                    [ ( String.length (String.trim video.nickname) > 0, ( "nickname", Encode.string video.nickname ) )
+                    , ( True, ( "status", Encode.int <| encodeStatus video.status ) )
+                    , ( True, ( "tags", Encode.list Encode.string video.tags ) )
+                    ]
     in
     Http.post
         { url = "/api/video/" ++ String.fromInt id

@@ -10,7 +10,7 @@ import Json.Decode as Decode
 import Ports
 import Routes
 import Util exposing (AsyncResource(..), errorToString, optionalList)
-import VideoRepository exposing (Video, VideoInfo, VideoStatus(..), VideoUpdatePayload, getVideoById, updateVideo)
+import VideoRepository exposing (Video, VideoInfo, VideoStatus(..), VideoUpdatePayload, updateVideo)
 
 
 type alias FormState =
@@ -27,6 +27,7 @@ type alias Model =
     , videoUpdate : AsyncResource () String
     , key : Navigation.Key
     , changesUrl : Bool
+    , fetchNextVideo : Video -> ((Result Http.Error VideoInfo -> Msg) -> Cmd Msg)
     }
 
 
@@ -42,8 +43,8 @@ type Msg
     | ToggleFullscreen
 
 
-init : Navigation.Key -> Bool -> ((Result Http.Error VideoInfo -> Msg) -> Cmd Msg) -> ( Model, Cmd Msg )
-init key changesUrl getter =
+init : Navigation.Key -> Bool -> ((Result Http.Error VideoInfo -> Msg) -> Cmd Msg) -> (Video -> ((Result Http.Error VideoInfo -> Msg) -> Cmd Msg)) -> ( Model, Cmd Msg )
+init key changesUrl getter fetchNext =
     ( { video = Loading
       , formState =
             { nickname = ""
@@ -54,6 +55,7 @@ init key changesUrl getter =
       , videoUpdate = Idle
       , key = key
       , changesUrl = changesUrl
+      , fetchNextVideo = fetchNext
       }
     , getter GotVideoInfo
     )
@@ -94,21 +96,37 @@ update msg model =
                 | video = Success videoInfo
                 , formState = newFormState videoInfo.video
               }
-            , Cmd.none
+            , Cmd.batch <| optionalList
+              [ ( model.changesUrl
+                , Navigation.replaceUrl model.key (Routes.routeHref (Routes.WatchVideo videoInfo.video.id))
+                )
+              ]
             )
 
-        ( UpdatedVideo (Ok _), Success _ ) ->
+        ( UpdatedVideo (Ok _), Success video ) ->
             ( { model
                 | videoUpdate = Success ()
+                , video = ReFetching (Success video)
               }
-            , Cmd.none
+            , case video.next of
+                Just next ->
+                    model.fetchNextVideo next GotVideoInfo
+
+                Nothing ->
+                    Cmd.none
             )
 
-        ( UpdatedVideo (Ok _), ReFetching (Success _) ) ->
+        ( UpdatedVideo (Ok _), ReFetching (Success video) ) ->
             ( { model
                 | videoUpdate = Success ()
+                , video = ReFetching (Success video)
               }
-            , Cmd.none
+            , case video.next of
+                Just next ->
+                    model.fetchNextVideo next GotVideoInfo
+
+                Nothing ->
+                    Cmd.none
             )
 
         ( GotVideoInfo (Err err), Loading ) ->
@@ -128,36 +146,25 @@ update msg model =
 
         ( SubmitForm, Success video ) ->
             let
+                getTags : List String
+                getTags =
+                    case String.trim model.formState.tags of
+                        "" -> 
+                            []
+
+                        tags ->
+                            String.split "," tags
+
                 payload : VideoUpdatePayload
                 payload =
                     { nickname = model.formState.nickname
                     , status = model.formState.status
-                    , tags = String.split "," model.formState.tags
+                    , tags = getTags
                     }
-
-                updateVideoCommand : Cmd Msg
-                updateVideoCommand =
-                    updateVideo video.video.id payload UpdatedVideo
             in
-            case video.next of
-                Just next ->
-                    ( { model
-                        | video = ReFetching (Success (VideoInfo next Nothing))
-                        , formState = newFormState next
-                        , videoUpdate = Loading
-                      }
-                    , Cmd.batch <|
-                        optionalList
-                            [ ( True, updateVideoCommand )
-                            , ( True, getVideoById next.id GotVideoInfo )
-                            , ( model.changesUrl, Navigation.replaceUrl model.key (Routes.routeHref (Routes.WatchVideo next.id)) )
-                            ]
-                    )
-
-                Nothing ->
-                    ( { model | videoUpdate = Loading }
-                    , updateVideoCommand
-                    )
+            ( { model | videoUpdate = Loading }
+            , updateVideo video.video.id payload UpdatedVideo
+            )
 
         ( TogglePlayPause, Success _ ) ->
             ( model, Ports.togglePlayPause "video" )
@@ -197,7 +204,7 @@ view model =
                     loadingView
 
                 Success videoInfo ->
-                    successView model.formState videoInfo (fetching || isUpdating)
+                    successView model.formState videoInfo (fetching || isUpdating || videoInfo.next == Nothing)
 
                 Failure err ->
                     errView err fetching
@@ -359,5 +366,12 @@ formView state videoInfo cantUpdate =
             , type_ "submit"
             , disabled cantUpdate
             ]
-            [ text "Save & Next" ]
+            [ text <|
+                case videoInfo.next of
+                    Just _ ->
+                        "Save & Next"
+
+                    Nothing ->
+                        "Nothing more to see here :)"
+            ]
         ]

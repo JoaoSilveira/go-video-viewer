@@ -16,7 +16,7 @@ type Msg =
 init : Navigation.Key -> ( Model, Cmd Msg )
 init key =
     let
-        (model, cmd) = VideoViewer.init key False getNextVideo
+        (model, cmd) = VideoViewer.init key False getNextVideo (always getNextVideo)
     in
     ( model, Cmd.map VideoViewerMsg cmd)
 

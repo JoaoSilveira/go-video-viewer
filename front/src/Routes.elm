@@ -56,3 +56,25 @@ isRouteActive url route =
             routeFromUrl url
     in
     urlRoute == route
+
+
+areUrlsSamePage : Url -> Url -> Bool
+areUrlsSamePage a b =
+    case (routeFromUrl a, routeFromUrl b) of
+        (Home, Home) ->
+            True
+
+        (NextVideo, NextVideo) ->
+            True
+
+        (WatchVideo _, WatchVideo _) ->
+            True
+
+        (SavedList _, SavedList _) ->
+            True
+
+        (ErrorPage, ErrorPage) ->
+            True
+
+        (_, _) ->
+            False
